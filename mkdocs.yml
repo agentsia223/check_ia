@@ -1,0 +1,61 @@
+site_name: Check-IA Documentation
+site_url: https://agentsia223.github.io/check_ia/
+site_description: Documentation for Check-IA, an AI-powered fact-checking platform for the French-speaking Sahel
+repo_url: https://github.com/agentsia223/check_ia
+repo_name: agentsia223/check_ia
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Overview: getting-started/index.md
+    - Backend Setup: getting-started/backend.md
+    - Frontend Setup: getting-started/frontend.md
+    - Environment Variables: getting-started/environment.md
+  - Architecture:
+    - Overview: architecture/index.md
+    - AI Pipeline: architecture/ai-pipeline.md
+    - Data Models: architecture/data-models.md
+  - API Reference: api/index.md
+  - Contributing:
+    - Guide: contributing/index.md
+    - Code of Conduct: contributing/code-of-conduct.md
+  - Testing:
+    - Overview: testing/index.md
+    - Backend Tests: testing/backend.md
+    - Frontend Tests: testing/frontend.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+plugins:
+  - search

@@ -1,0 +1,11 @@
+.env
+__pycache__/
+node_modules/
+*.log
+*.sh
+*.bat
+utils_docs/
+site/
+.pytest_cache/
+htmlcov/
+.coverage
