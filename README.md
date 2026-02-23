@@ -43,7 +43,7 @@ Check-IA is a fact-checking platform designed for the cultural and linguistic re
 
 ## Architecture
 
-![System Architecture](/docs/assets/images/system-architecture.png)
+![System Architecture](docs/assets/images/system-architecture.png)
 
 ### AI Analysis Pipeline
 
