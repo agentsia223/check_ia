@@ -9,3 +9,4 @@ site/
 .pytest_cache/
 htmlcov/
 .coverage
+.DS_Store

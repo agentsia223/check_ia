@@ -1,5 +1,7 @@
 # Testing Overview
 
+> For the consolidated test plan covering strategy, test cases, data structures, and PR workflow, see [TEST_PLAN.md](https://github.com/agentsia223/check_ia/blob/main/TEST_PLAN.md).
+
 Check-IA uses pytest for backend testing and Jest with React Testing Library for frontend testing.
 
 ## Testing Strategy
@@ -38,6 +40,22 @@ Check-IA uses pytest for backend testing and Jest with React Testing Library for
 ## Running Tests
 
 See [Backend Tests](backend.md) and [Frontend Tests](frontend.md) for detailed instructions.
+
+## Data Structure Decisions
+
+Tests validate the five core models defined in `core/models.py`: **Fact**, **Keyword**, **Submission**, **ImageVerification**, and **VerifiedMedia**. Key design decisions that affect testing:
+
+- Supabase UUIDs instead of Django User model (no `django.contrib.auth` in production)
+- JSONField for variable-structure AI results
+- French field names for some models (`texte`, `statut`, `mots_cles`)
+
+For full field-level documentation, see [Data Models](../architecture/data-models.md).
+
+## PR Workflow
+
+All contributions follow the branching strategy (`feature/*`, `fix/*`, `docs/*`) and must pass CI checks before merge. PRs use the [template](https://github.com/agentsia223/check_ia/blob/main/.github/PULL_REQUEST_TEMPLATE.md) and require at least one approving review.
+
+For full details, see [CONTRIBUTING.md](https://github.com/agentsia223/check_ia/blob/main/CONTRIBUTING.md).
 
 ## CI Integration
 

@@ -177,6 +177,7 @@ check_ia/
 ├── CODE_OF_CONDUCT.md        # Contributor Covenant
 ├── CONTRIBUTING.md            # Contribution guidelines
 ├── PROJECT_CHARTER.md        # Project vision, mission, values
+├── TEST_PLAN.md              # QA process: strategy, test cases, data structures, PR workflow
 ├── mkdocs.yml                # Documentation site config
 ├── railway.toml              # Railway backend config
 ├── railway-celery.toml       # Railway celery worker config
@@ -201,6 +202,7 @@ Full documentation is available at [https://agentsia223.github.io/check_ia/](htt
 - [Architecture](https://agentsia223.github.io/check_ia/architecture/)
 - [API Reference](https://agentsia223.github.io/check_ia/api/)
 - [Contributing Guide](https://agentsia223.github.io/check_ia/contributing/)
+- [Test Plan](TEST_PLAN.md)
 
 ## Contributing
 
