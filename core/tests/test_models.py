@@ -1,4 +1,6 @@
 import uuid
+from unittest.mock import Mock, patch
+
 from django.test import TestCase
 from core.models import Fact, Keyword, Submission, ImageVerification, VerifiedMedia
 
@@ -146,6 +148,68 @@ class ImageVerificationModelTest(TestCase):
         )
         verifications = list(ImageVerification.objects.all())
         self.assertEqual(verifications[0].pk, iv2.pk)
+
+    @patch("core.services.supabase_storage.delete_image_from_supabase")
+    def test_delete_removes_image_from_supabase(self, delete_image_from_supabase):
+        delete_image_from_supabase.return_value = {"success": True}
+        verification = ImageVerification.objects.create(
+            supabase_user_id=uuid.uuid4(),
+            user_email="test@example.com",
+            image_path="images/delete-me.jpg",
+            image_url="https://storage.example.com/delete-me.jpg",
+            original_filename="delete-me.jpg",
+            verification_type="content",
+            status="EN_COURS",
+            explanation="Test",
+        )
+
+        verification.delete()
+
+        delete_image_from_supabase.assert_called_once_with("images/delete-me.jpg")
+        self.assertFalse(ImageVerification.objects.filter(pk=verification.pk).exists())
+
+    @patch("core.models.logger")
+    @patch("core.services.supabase_storage.delete_image_from_supabase")
+    def test_delete_logs_supabase_failures_without_blocking_delete(
+        self,
+        delete_image_from_supabase,
+        logger,
+    ):
+        delete_image_from_supabase.return_value = {"success": False, "error": "storage down"}
+        verification = ImageVerification.objects.create(
+            supabase_user_id=uuid.uuid4(),
+            user_email="test@example.com",
+            image_path="images/fail.jpg",
+            image_url="https://storage.example.com/fail.jpg",
+            original_filename="fail.jpg",
+            verification_type="content",
+            status="EN_COURS",
+            explanation="Test",
+        )
+
+        verification.delete()
+
+        logger.warning.assert_called_once()
+        self.assertFalse(ImageVerification.objects.filter(pk=verification.pk).exists())
+
+    @patch("core.models.logger")
+    @patch("core.services.supabase_storage.delete_image_from_supabase", Mock(side_effect=RuntimeError("boom")))
+    def test_delete_logs_unexpected_supabase_errors_without_blocking_delete(self, logger):
+        verification = ImageVerification.objects.create(
+            supabase_user_id=uuid.uuid4(),
+            user_email="test@example.com",
+            image_path="images/error.jpg",
+            image_url="https://storage.example.com/error.jpg",
+            original_filename="error.jpg",
+            verification_type="content",
+            status="EN_COURS",
+            explanation="Test",
+        )
+
+        verification.delete()
+
+        logger.warning.assert_called_once()
+        self.assertFalse(ImageVerification.objects.filter(pk=verification.pk).exists())
 
 
 class VerifiedMediaModelTest(TestCase):

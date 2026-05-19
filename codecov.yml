@@ -1,25 +1,25 @@
 coverage:
   precision: 2
   round: down
-  range: "50...100"
+  range: "80...100"
   status:
     project:
       default:
-        target: 50%
+        target: 80%
         threshold: 0%
       backend:
-        target: 50%
+        target: 80%
         threshold: 0%
         flags:
           - backend
       frontend:
-        target: 50%
+        target: 80%
         threshold: 0%
         flags:
           - frontend
     patch:
       default:
-        target: 50%
+        target: 80%
         threshold: 0%
 
 flags:
