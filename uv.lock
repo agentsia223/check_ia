@@ -168,6 +168,63 @@ wheels = [
 ]
 
 [[package]]
+name = "check-ia"
+version = "0.1.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "beautifulsoup4" },
+    { name = "celery" },
+    { name = "deep-translator" },
+    { name = "django" },
+    { name = "django-cors-headers" },
+    { name = "djangorestframework" },
+    { name = "djangorestframework-simplejwt" },
+    { name = "fr-core-news-sm" },
+    { name = "gunicorn" },
+    { name = "huggingface-hub" },
+    { name = "numpy" },
+    { name = "openai" },
+    { name = "pillow" },
+    { name = "psycopg2-binary" },
+    { name = "python-dotenv" },
+    { name = "redis" },
+    { name = "requests" },
+    { name = "spacy" },
+    { name = "supabase" },
+    { name = "torch" },
+    { name = "tqdm" },
+    { name = "transformers" },
+    { name = "whitenoise" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "beautifulsoup4", specifier = "==4.12.3" },
+    { name = "celery", specifier = "==5.4.0" },
+    { name = "deep-translator", specifier = "==1.11.4" },
+    { name = "django", specifier = "==5.1.1" },
+    { name = "django-cors-headers", specifier = "==4.4.0" },
+    { name = "djangorestframework", specifier = "==3.15.2" },
+    { name = "djangorestframework-simplejwt", specifier = "==5.3.1" },
+    { name = "fr-core-news-sm", url = "https://github.com/explosion/spacy-models/releases/download/fr_core_news_sm-3.8.0/fr_core_news_sm-3.8.0-py3-none-any.whl" },
+    { name = "gunicorn", specifier = "==22.0.0" },
+    { name = "huggingface-hub", specifier = "==0.25.1" },
+    { name = "numpy", specifier = ">=1.24.3,<2.0" },
+    { name = "openai", specifier = ">=1.102.0" },
+    { name = "pillow", specifier = "==10.0.0" },
+    { name = "psycopg2-binary", specifier = "==2.9.9" },
+    { name = "python-dotenv", specifier = "==1.0.1" },
+    { name = "redis", specifier = "==5.1.1" },
+    { name = "requests", specifier = "==2.32.3" },
+    { name = "spacy", specifier = "==3.8.2" },
+    { name = "supabase", specifier = "==2.11.0" },
+    { name = "torch", specifier = "==2.2.2" },
+    { name = "tqdm", specifier = "==4.66.5" },
+    { name = "transformers", specifier = "==4.45.1" },
+    { name = "whitenoise", specifier = "==6.7.0" },
+]
+
+[[package]]
 name = "click"
 version = "8.2.1"
 source = { registry = "https://pypi.org/simple" }
@@ -357,59 +414,6 @@ wheels = [
 ]
 
 [[package]]
-name = "factcheck-project"
-version = "0.1.0"
-source = { virtual = "." }
-dependencies = [
-    { name = "beautifulsoup4" },
-    { name = "celery" },
-    { name = "deep-translator" },
-    { name = "django" },
-    { name = "django-cors-headers" },
-    { name = "djangorestframework" },
-    { name = "djangorestframework-simplejwt" },
-    { name = "fr-core-news-sm" },
-    { name = "huggingface-hub" },
-    { name = "numpy" },
-    { name = "openai" },
-    { name = "pillow" },
-    { name = "psycopg2-binary" },
-    { name = "python-dotenv" },
-    { name = "redis" },
-    { name = "requests" },
-    { name = "spacy" },
-    { name = "supabase" },
-    { name = "torch" },
-    { name = "tqdm" },
-    { name = "transformers" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "beautifulsoup4", specifier = "==4.12.3" },
-    { name = "celery", specifier = "==5.4.0" },
-    { name = "deep-translator", specifier = "==1.11.4" },
-    { name = "django", specifier = "==5.1.1" },
-    { name = "django-cors-headers", specifier = "==4.4.0" },
-    { name = "djangorestframework", specifier = "==3.15.2" },
-    { name = "djangorestframework-simplejwt", specifier = "==5.3.1" },
-    { name = "fr-core-news-sm", url = "https://github.com/explosion/spacy-models/releases/download/fr_core_news_sm-3.8.0/fr_core_news_sm-3.8.0-py3-none-any.whl" },
-    { name = "huggingface-hub", specifier = "==0.25.1" },
-    { name = "numpy", specifier = ">=1.24.3,<2.0" },
-    { name = "openai", specifier = ">=1.102.0" },
-    { name = "pillow", specifier = "==10.0.0" },
-    { name = "psycopg2-binary", specifier = "==2.9.9" },
-    { name = "python-dotenv", specifier = "==1.0.1" },
-    { name = "redis", specifier = "==5.1.1" },
-    { name = "requests", specifier = "==2.32.3" },
-    { name = "spacy", specifier = "==3.8.2" },
-    { name = "supabase", specifier = "==2.11.0" },
-    { name = "torch", specifier = "==2.2.2" },
-    { name = "tqdm", specifier = "==4.66.5" },
-    { name = "transformers", specifier = "==4.45.1" },
-]
-
-[[package]]
 name = "filelock"
 version = "3.19.1"
 source = { registry = "https://pypi.org/simple" }
@@ -447,6 +451,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/aa/6c/fe920e91959bd211325860332be5898b6b53d6ccd873c053fc5cc829020c/gotrue-2.12.4.tar.gz", hash = "sha256:35d2e58e066486321f4dff0033b30a53d057c7f436c15287122fa0cb833029b1", size = 34817, upload-time = "2025-08-08T15:55:49.393Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/9a/2f/0e68d566d9339b8d320399d755704e17a94a123cf22f124b4ab2f686bcc3/gotrue-2.12.4-py3-none-any.whl", hash = "sha256:cf36dfcebc1da63b8d1e7b93eb1a35dfee3dcb1e1376833c256464010eb5fcd6", size = 42783, upload-time = "2025-08-08T15:55:48.289Z" },
+]
+
+[[package]]
+name = "gunicorn"
+version = "22.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1e/88/e2f93c5738a4c1f56a458fc7a5b1676fc31dcdbb182bef6b40a141c17d66/gunicorn-22.0.0.tar.gz", hash = "sha256:4a0b436239ff76fb33f11c07a16482c521a7e09c1ce3cc293c2330afe01bec63", size = 3639760, upload-time = "2024-04-16T22:58:19.218Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/29/97/6d610ae77b5633d24b69c2ff1ac3044e0e565ecbd1ec188f02c45073054c/gunicorn-22.0.0-py3-none-any.whl", hash = "sha256:350679f91b24062c86e386e198a15438d53a7a8207235a78ba1b53df4c4378d9", size = 84443, upload-time = "2024-04-16T22:58:15.233Z" },
 ]
 
 [[package]]
@@ -1747,6 +1763,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/86/eb/20b6cdf273913d0ad05a6a14aed4b9a85591c18a987a3d47f20fa13dcc47/websockets-15.0.1-cp313-cp313-win32.whl", hash = "sha256:ba9e56e8ceeeedb2e080147ba85ffcd5cd0711b89576b83784d8605a7df455fa", size = 176393, upload-time = "2025-03-05T20:02:53.814Z" },
     { url = "https://files.pythonhosted.org/packages/1b/6c/c65773d6cab416a64d191d6ee8a8b1c68a09970ea6909d16965d26bfed1e/websockets-15.0.1-cp313-cp313-win_amd64.whl", hash = "sha256:e09473f095a819042ecb2ab9465aee615bd9c2028e4ef7d933600a8401c79561", size = 176837, upload-time = "2025-03-05T20:02:55.237Z" },
     { url = "https://files.pythonhosted.org/packages/fa/a8/5b41e0da817d64113292ab1f8247140aac61cbf6cfd085d6a0fa77f4984f/websockets-15.0.1-py3-none-any.whl", hash = "sha256:f7a866fbc1e97b5c617ee4116daaa09b722101d4a3c170c787450ba409f9736f", size = 169743, upload-time = "2025-03-05T20:03:39.41Z" },
+]
+
+[[package]]
+name = "whitenoise"
+version = "6.7.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/64/b8/86451d63ef5e1a9c480b52759d9db25ba85c3420ebdaf039057ed152a4c1/whitenoise-6.7.0.tar.gz", hash = "sha256:58c7a6cd811e275a6c91af22e96e87da0b1109e9a53bb7464116ef4c963bf636", size = 24973, upload-time = "2024-06-19T16:20:09.11Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b8/42/68400d8ad59f67a1f7e12c2f39089ce005f08f73333f3e215f3d5ed6453c/whitenoise-6.7.0-py3-none-any.whl", hash = "sha256:a1ae85e01fdc9815d12fa33f17765bc132ed2c54fa76daf9e39e879dd93566f6", size = 19905, upload-time = "2024-06-19T16:20:03.269Z" },
 ]
 
 [[package]]

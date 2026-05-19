@@ -7,6 +7,7 @@
 **AI-powered fact-checking platform for the Sahel region**
 
 [![Tests](https://github.com/agentsia223/check_ia/actions/workflows/test.yml/badge.svg)](https://github.com/agentsia223/check_ia/actions/workflows/test.yml)
+[![Codecov](https://codecov.io/gh/agentsia223/check_ia/branch/main/graph/badge.svg)](https://codecov.io/gh/agentsia223/check_ia)
 [![Django](https://img.shields.io/badge/Django-5.1-092E20?logo=django&logoColor=white)](https://djangoproject.com)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-Auth%20%7C%20DB%20%7C%20Storage-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com)
