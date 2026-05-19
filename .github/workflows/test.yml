@@ -10,6 +10,8 @@ jobs:
     backend-tests:
         name: Backend Tests
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
         env:
             DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
             DB_HOST: localhost
@@ -29,11 +31,21 @@ jobs:
                   pip install -r requirements.txt
                   pip install pytest pytest-django pytest-cov
             - name: Run tests
-              run: pytest --cov=core --cov-report=term-missing -v
+              run: pytest --cov=core --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=50 -v
+            - name: Upload backend coverage to Codecov
+              uses: codecov/codecov-action@v5
+              with:
+                  files: ./coverage.xml
+                  flags: backend
+                  name: backend
+                  fail_ci_if_error: true
+                  token: ${{ secrets.CODECOV_TOKEN }}
 
     frontend-tests:
         name: Frontend Tests
         runs-on: ubuntu-latest
+        permissions:
+            contents: read
         defaults:
             run:
                 working-directory: client
@@ -47,4 +59,12 @@ jobs:
             - name: Install dependencies
               run: npm ci
             - name: Run tests
-              run: npm test -- --watchAll=false --coverage
+              run: npm test -- --watchAll=false --coverage --coverageReporters=text --coverageReporters=lcov
+            - name: Upload frontend coverage to Codecov
+              uses: codecov/codecov-action@v5
+              with:
+                  files: ./client/coverage/lcov.info
+                  flags: frontend
+                  name: frontend
+                  fail_ci_if_error: true
+                  token: ${{ secrets.CODECOV_TOKEN }}
