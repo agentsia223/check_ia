@@ -23,10 +23,10 @@ This document consolidates the QA process for Check-IA: testing strategy, sample
 
 Tests run automatically on every pull request and push to `main` via `.github/workflows/test.yml`:
 
-- **Backend job**: Python 3.12, `pytest --cov=core --cov-fail-under=50` with SQLite in-memory database, then upload `coverage.xml` to Codecov with the `backend` flag
-- **Frontend job**: Node.js 18, `npm test -- --watchAll=false --coverage` with a 50% statements/lines threshold, then upload `coverage/lcov.info` to Codecov with the `frontend` flag
+- **Backend job**: Python 3.12, `pytest --cov=core --cov-fail-under=80` with SQLite in-memory database, then upload `coverage.xml` to Codecov with the `backend` flag
+- **Frontend job**: Node.js 18, `npm test -- --watchAll=false --coverage` with an 80% statements/lines threshold, then upload `coverage/lcov.info` to Codecov with the `frontend` flag
 
-Both jobs must pass before a PR can be merged. Codecov enforces 50% project coverage for the backend, frontend, combined project, and patch coverage.
+Both jobs must pass before a PR can be merged. Codecov enforces 80% project coverage for the backend, frontend, combined project, and patch coverage.
 
 ### Test Environment
 
@@ -69,22 +69,24 @@ Both jobs must pass before a PR can be merged. Codecov enforces 50% project cove
 
 | File | Tests | Coverage |
 |------|-------|----------|
-| `core/tests/test_models.py` | 13 tests | Fact, Keyword, Submission, ImageVerification, VerifiedMedia models |
-| `core/tests/test_serializers.py` | 5 tests | Keyword, Fact, Submission, VerifiedMedia serializers |
+| `core/tests/test_models.py` | 18 tests | Fact, Keyword, Submission, ImageVerification deletion, VerifiedMedia models |
+| `core/tests/test_serializers.py` | 7 tests | Keyword, Fact, Submission, VerifiedMedia serializers |
 | `core/tests/test_views.py` | 6 tests | Public endpoints, auth-required endpoints |
-| `core/tests/test_auth_and_services.py` | 17 tests | Supabase auth, middleware, translation, keyword extraction, web scraping, pixel analyzer |
+| `core/tests/test_auth_and_services.py` | 18 tests | Supabase auth, middleware, translation, keyword extraction, web scraping, pixel analyzer |
+| `core/tests/test_services_and_tasks_coverage.py` | 12 tests | LLM/search/storage/image verification services and Celery task flows |
 | `client/src/App.test.js` | 1 test | Full App smoke test with mocked Supabase |
-| `client/src/components/coverage.test.js` | 9 tests | Route components, auth states, validation, submission and upload flows |
+| `client/src/components/coverage.test.js` | 22 tests | Route components, auth states, validation, submission polling, image upload and result flows |
 | `client/src/utils/AuthContext.test.js` | 2 tests | Auth provider state and helper methods |
 | `client/src/lib/supabase.test.js` | 1 test | Supabase auth helper delegation |
 | `client/src/axiosInstance.test.js` | 3 tests | Request and response auth interceptors |
+| `client/src/reportWebVitals.test.js` | 1 test | Web vitals callback guard |
 
 ### Running Tests
 
 ```bash
 # Backend
 pytest -v
-pytest --cov=core --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=50 -v
+pytest --cov=core --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=80 -v
 
 # Frontend
 cd client
@@ -144,9 +146,9 @@ All work is done in feature branches created from `main`:
 
 Both jobs in `.github/workflows/test.yml` must pass:
 
-- **Backend Tests** — `pytest --cov=core --cov-fail-under=50` (Python 3.12)
-- **Frontend Tests** — `npm test -- --watchAll=false --coverage` (Node.js 18, 50% statements/lines threshold)
-- **Codecov** — backend, frontend, combined project, and patch coverage must meet the 50% target
+- **Backend Tests** — `pytest --cov=core --cov-fail-under=80` (Python 3.12)
+- **Frontend Tests** — `npm test -- --watchAll=false --coverage` (Node.js 18, 80% statements/lines threshold)
+- **Codecov** — backend, frontend, combined project, and patch coverage must meet the 80% target
 
 ### Branch Protection Rules
 

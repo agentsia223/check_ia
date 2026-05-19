@@ -31,7 +31,7 @@ jobs:
                   pip install -r requirements.txt
                   pip install pytest pytest-django pytest-cov
             - name: Run tests
-              run: pytest --cov=core --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=50 -v
+              run: pytest --cov=core --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=80 -v
             - name: Upload backend coverage to Codecov
               uses: codecov/codecov-action@v5
               with:
