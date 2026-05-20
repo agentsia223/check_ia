@@ -66,7 +66,13 @@ For image verification, Gemini 2.0 Flash performs visual analysis directly.
 
 ### Environment Variables
 
-Create a `.env` file in the project root for the backend:
+Copy `.env.example` to `.env` in the project root and fill in your secrets:
+
+```bash
+cp .env.example .env
+```
+
+Backend variables:
 
 ```bash
 # Django
@@ -95,7 +101,13 @@ REDIS_URL=redis://localhost:6379/0
 CORS_ALLOWED_ORIGINS=http://localhost:3000
 ```
 
-Create a `.env` file in `client/`:
+Copy `client/.env.example` to `client/.env`:
+
+```bash
+cp client/.env.example client/.env
+```
+
+Frontend variables:
 
 ```bash
 REACT_APP_SUPABASE_URL=
@@ -121,8 +133,10 @@ python manage.py runserver
 ```bash
 cd client
 npm install
-npm start
+npm run dev
 ```
+
+> **Production:** `npm start` serves the existing production build. Use `npm run build` first, then `npm start`.
 
 ### Celery Worker
 
