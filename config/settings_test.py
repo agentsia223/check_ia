@@ -15,8 +15,8 @@ DATABASES = {
     }
 }
 
-# Add django.contrib.auth for test client (DRF APIClient needs Permission model)
-INSTALLED_APPS = list(INSTALLED_APPS) + ['django.contrib.auth']
+# Keep test app configuration aligned with production. DRF is configured to use
+# None for unauthenticated users, so django.contrib.auth is not required.
 
 # Run Celery tasks synchronously during tests
 CELERY_TASK_ALWAYS_EAGER = True
