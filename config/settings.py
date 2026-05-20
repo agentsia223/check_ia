@@ -96,6 +96,9 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    # Production intentionally does not install django.contrib.auth; use None
+    # instead of DRF's default AnonymousUser import from django.contrib.auth.
+    'UNAUTHENTICATED_USER': None,
 }
 
 # Logging configuration
