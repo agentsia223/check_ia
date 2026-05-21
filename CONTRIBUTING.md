@@ -67,9 +67,11 @@ git checkout -b feature/your-feature main
 
 4. Ensure CI checks pass (backend tests, frontend tests)
 
-5. Address automated review feedback from CI, CodeRabbit, Claude, and maintainers by pushing additional commits
+5. Request review from a maintainer
 
-6. Once required checks pass and conversations are resolved, a maintainer will merge the PR
+6. Address any review feedback by pushing additional commits
+
+7. Once approved, a maintainer will merge the PR
 
 ## Code Style
 
@@ -125,24 +127,18 @@ npm test -- --watchAll=false
 
 ## Code Review Process
 
-- This repository currently uses a solo-maintainer review pipeline
-- Pull requests must pass required CI and resolve review conversations before merge
-- Required human approval is disabled because GitHub does not allow PR authors to approve their own pull requests
-- CodeRabbit and Claude may provide automated review feedback
+- All pull requests require at least one approving review before merge
 - Maintainers may request changes — please be responsive to feedback
 - Reviews focus on correctness, readability, test coverage, and alignment with the project's goals
 - Be constructive and respectful in code review discussions
-
-For the full automated review setup, including the CODEOWNERS/multi-maintainer variant, see [Automated PR Review SOP](docs/contributing/automated-review-sop.md).
 
 ## Branch Protection
 
 The `main` branch has the following protections:
 
-- Pull requests are required before merging
+- Pull request reviews are required before merging
 - CI status checks (backend tests, frontend tests) must pass
 - Branches must be up to date with `main` before merging
-- Review conversations must be resolved
 - Force pushes are not allowed
 
 ## Questions?
