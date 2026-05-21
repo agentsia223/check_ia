@@ -1,0 +1,14 @@
+# Security-sensitive repository controls
+.github/ @immerSIR
+.coderabbit.yaml @immerSIR
+CLAUDE.md @immerSIR
+REVIEW.md @immerSIR
+SECURITY.md @immerSIR
+
+# Dependency manifests
+requirements*.txt @immerSIR
+client/package*.json @immerSIR
+
+# Core application areas
+core/ @immerSIR
+client/src/ @immerSIR
