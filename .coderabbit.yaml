@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+tone_instructions: "Be direct, concise, and prioritize correctness, security, regressions, accessibility, and missing tests."
+
+reviews:
+  profile: assertive
+  request_changes_workflow: true
+  review_status: true
+  review_details: true
+  commit_status: true
+  fail_commit_status: true
+  high_level_summary: true
+  assess_linked_issues: true
+  enable_prompt_for_ai_agents: true
+  in_progress_fortune: false
+  poem: false
+  path_filters:
+    - "!client/build/**"
+    - "!client/coverage/**"
+    - "!coverage/**"
+    - "!**/*.min.js"
+    - "!**/dist/**"
+    - "!**/.next/**"
+  path_instructions:
+    - path: "client/src/**"
+      instructions: "Review React changes for accessibility, state handling, loading and error states, responsive UI regressions, API integration mistakes, and focused frontend test coverage."
+    - path: "core/**"
+      instructions: "Review Django/backend changes for authorization, input validation, error handling, database query safety, external API failure modes, and focused pytest coverage."
+    - path: ".github/workflows/**"
+      instructions: "Treat workflow changes as security-sensitive. Flag broad token permissions, unsafe use of secrets, untrusted pull request code running with privileged triggers, missing environment protection for deployments, and unpinned or unexpected third-party actions."
+    - path: "requirements*.txt"
+      instructions: "Review dependency changes for supply-chain risk, unnecessary additions, vulnerable packages, and whether test coverage should change."
+    - path: "client/package*.json"
+      instructions: "Review dependency and script changes for supply-chain risk, install-time script risk, vulnerable packages, and whether lockfile changes match manifest changes."
+  auto_review:
+    enabled: true
+    drafts: false
+    auto_incremental_review: true
+    auto_pause_after_reviewed_commits: 5
+    base_branches:
+      - "main"
+    ignore_title_keywords:
+      - "[skip review]"
+      - "[wip]"
+    ignore_usernames:
+      - "dependabot[bot]"
+      - "github-actions[bot]"
+  tools:
+    semgrep:
+      enabled: true
+    opengrep:
+      enabled: true
+    trivy:
+      enabled: true
+    osvScanner:
+      enabled: true
+    gitleaks:
+      enabled: true
+    trufflehog:
+      enabled: true
+    hadolint:
+      enabled: true
+    actionlint:
+      enabled: true
+    eslint:
+      enabled: true
+    pylint:
+      enabled: true
+
+chat:
+  allow_non_org_members: false
+  auto_reply: false
+
+knowledge_base:
+  web_search:
+    enabled: true
+  code_guidelines:
+    enabled: true
