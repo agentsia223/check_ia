@@ -421,7 +421,7 @@ function AIImageDetection() {
 
                         {imagePreview && (
                             <Box sx={{ textAlign: "center", mb: 2 }}>
-                                <ImagePreview src={imagePreview} alt="Aperçu" />
+                                <ImagePreview src={imagePreview} alt="Image upload preview — selected file preview" />
                                 <Typography
                                     variant="caption"
                                     display="block"
