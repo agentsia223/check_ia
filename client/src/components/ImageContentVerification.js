@@ -458,7 +458,7 @@ function ImageContentVerification() {
                                 {imagePreview && (
                                     <Fade in timeout={300}>
                                         <Box sx={{ mt: 3, textAlign: "center" }}>
-                                            <ImagePreview src={imagePreview} alt="Aperçu" />
+                                            <ImagePreview src={imagePreview} alt="Image upload preview — selected file preview" />
                                             <Typography
                                                 variant="body2"
                                                 color="text.secondary"
