@@ -46,10 +46,10 @@ npm test -- --watchAll=false
 1. Fill in the PR template completely
 2. Link any related issues
 3. Ensure CI checks pass
-4. Request review from a maintainer
-5. Address review feedback
+4. Address automated review feedback from CI, CodeRabbit, Claude, and maintainers
+5. Once required checks pass and conversations are resolved, the PR can be merged
 
-All pull requests require at least one approving review before merge.
+This repository currently uses the solo-maintainer review pipeline. Pull requests must pass required CI and resolve conversations before merge; human approval is not required because GitHub does not allow PR authors to approve their own pull requests. See [Automated PR Review SOP](automated-review-sop.md) for the full setup and the CODEOWNERS/multi-maintainer variant.
 
 ## Code of Conduct
 
