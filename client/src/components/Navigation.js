@@ -17,7 +17,6 @@ import {
     ListItemButton,
     useMediaQuery,
     useTheme,
-    Avatar,
     Chip,
 } from "@mui/material";
 import {
@@ -31,9 +30,9 @@ import {
     LogoutRounded,
     LoginRounded,
     PersonAddRounded,
-    VerifiedUser,
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
+import Logo from "./brand/Logo";
 
 function Navigation() {
     const { isLoggedIn, logout, loading } = useContext(AuthContext);
@@ -126,12 +125,7 @@ function Navigation() {
         >
             <Box sx={{ p: 3 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                    <Avatar sx={{ bgcolor: '#2563eb', mr: 2, width: 40, height: 40 }}>
-                        <VerifiedUser />
-                    </Avatar>
-                    <Typography variant="h6" sx={{ fontWeight: 700, color: '#0f172a' }}>
-                        Check-IA
-                    </Typography>
+                    <Logo height={34} />
                 </Box>
 
                 <List sx={{ p: 0 }}>
@@ -142,22 +136,22 @@ function Navigation() {
                                 to={item.path}
                                 onClick={toggleMobileDrawer}
                                 sx={{
-                                    borderRadius: 2,
+                                    borderRadius: 'var(--radius-md)',
                                     py: 1.5,
                                     '&:hover': {
-                                        bgcolor: '#f1f5f9'
+                                        bgcolor: 'var(--navy-50)'
                                     }
                                 }}
                             >
                                 <ListItemIcon sx={{ minWidth: 40 }}>
-                                    <item.icon sx={{ color: '#2563eb' }} />
+                                    <item.icon sx={{ color: 'var(--navy-600)' }} />
                                 </ListItemIcon>
-                                <ListItemText 
+                                <ListItemText
                                     primary={item.label}
                                     sx={{
                                         '& .MuiListItemText-primary': {
                                             fontWeight: 500,
-                                            color: '#0f172a'
+                                            color: 'var(--navy-900)'
                                         }
                                     }}
                                 />
@@ -167,7 +161,7 @@ function Navigation() {
 
                     {isLoggedIn && (
                         <>
-                            <Typography variant="subtitle2" sx={{ px: 2, py: 1, color: '#64748b', fontWeight: 600 }}>
+                            <Typography variant="subtitle2" sx={{ px: 2, py: 1, color: 'var(--slate-500)', fontWeight: 600 }}>
                                 Vérification d'Images
                             </Typography>
                             {imageVerificationItems.map((item) => (
@@ -177,27 +171,27 @@ function Navigation() {
                                         to={item.path}
                                         onClick={toggleMobileDrawer}
                                         sx={{
-                                            borderRadius: 2,
+                                            borderRadius: 'var(--radius-md)',
                                             py: 1.5,
                                             '&:hover': {
-                                                bgcolor: '#f1f5f9'
+                                                bgcolor: 'var(--green-50)'
                                             }
                                         }}
                                     >
                                         <ListItemIcon sx={{ minWidth: 40 }}>
-                                            <item.icon sx={{ color: '#f59e0b' }} />
+                                            <item.icon sx={{ color: 'var(--green-500)' }} />
                                         </ListItemIcon>
-                                        <ListItemText 
+                                        <ListItemText
                                             primary={item.label}
                                             secondary={item.description}
                                             sx={{
                                                 '& .MuiListItemText-primary': {
                                                     fontWeight: 500,
-                                                    color: '#0f172a'
+                                                    color: 'var(--navy-900)'
                                                 },
                                                 '& .MuiListItemText-secondary': {
                                                     fontSize: '0.75rem',
-                                                    color: '#64748b'
+                                                    color: 'var(--slate-500)'
                                                 }
                                             }}
                                         />
@@ -208,7 +202,7 @@ function Navigation() {
                     )}
                 </List>
 
-                <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid #e2e8f0' }}>
+                <Box sx={{ mt: 4, pt: 3, borderTop: '1px solid var(--border-subtle)' }}>
                     {!loading && isLoggedIn ? (
                         <Button
                             fullWidth
@@ -216,13 +210,15 @@ function Navigation() {
                             onClick={handleLogout}
                             startIcon={<LogoutRounded />}
                             sx={{
-                                borderColor: '#e2e8f0',
-                                color: '#64748b',
+                                minHeight: 48,
+                                borderRadius: 'var(--radius-md)',
+                                borderColor: 'var(--border-subtle)',
+                                color: 'var(--slate-500)',
                                 fontWeight: 500,
                                 '&:hover': {
-                                    borderColor: '#ef4444',
-                                    color: '#ef4444',
-                                    bgcolor: '#fef2f2'
+                                    borderColor: 'var(--red-600)',
+                                    color: 'var(--red-600)',
+                                    bgcolor: 'var(--red-50)'
                                 }
                             }}
                         >
@@ -232,16 +228,20 @@ function Navigation() {
                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                             <Button
                                 fullWidth
-                                variant="contained"
+                                variant="outlined"
                                 component={Link}
                                 to="/login"
                                 startIcon={<LoginRounded />}
                                 onClick={toggleMobileDrawer}
                                 sx={{
-                                    bgcolor: '#2563eb',
-                                    fontWeight: 600,
+                                    minHeight: 48,
+                                    borderRadius: 'var(--radius-md)',
+                                    borderColor: 'var(--navy-600)',
+                                    color: 'var(--navy-600)',
+                                    fontWeight: 500,
                                     '&:hover': {
-                                        bgcolor: '#1d4ed8'
+                                        bgcolor: 'var(--navy-50)',
+                                        borderColor: 'var(--navy-700)'
                                     }
                                 }}
                             >
@@ -249,18 +249,21 @@ function Navigation() {
                             </Button>
                             <Button
                                 fullWidth
-                                variant="outlined"
+                                variant="contained"
                                 component={Link}
                                 to="/register"
                                 startIcon={<PersonAddRounded />}
                                 onClick={toggleMobileDrawer}
                                 sx={{
-                                    borderColor: '#2563eb',
-                                    color: '#2563eb',
-                                    fontWeight: 500,
+                                    minHeight: 48,
+                                    borderRadius: 'var(--radius-md)',
+                                    bgcolor: 'var(--navy-600)',
+                                    color: 'white',
+                                    fontWeight: 600,
+                                    boxShadow: 'none',
                                     '&:hover': {
-                                        bgcolor: '#f0f7ff',
-                                        borderColor: '#2563eb'
+                                        bgcolor: 'var(--navy-700)',
+                                        boxShadow: 'var(--shadow-sm)'
                                     }
                                 }}
                             >
@@ -275,57 +278,44 @@ function Navigation() {
 
     return (
         <>
-            <AppBar 
-                position="static" 
+            <AppBar
+                position="static"
                 elevation={0}
-                sx={{ 
+                sx={{
                     bgcolor: 'white',
-                    borderBottom: '1px solid #e2e8f0',
-                    color: '#0f172a'
+                    borderBottom: '1px solid var(--border-subtle)',
+                    color: 'var(--navy-900)'
                 }}
             >
                 <Toolbar sx={{ px: { xs: 2, sm: 3 }, py: 1 }}>
                     {/* Logo */}
                     <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-                        <Avatar sx={{ bgcolor: '#2563eb', mr: 2, width: 40, height: 40 }}>
-                            <VerifiedUser />
-                        </Avatar>
                         <Button
                             component={Link}
                             to="/"
-                            sx={{ 
+                            aria-label="Check-IA"
+                            sx={{
                                 p: 0,
                                 minWidth: 'auto',
-                                color: '#0f172a',
                                 '&:hover': {
                                     bgcolor: 'transparent'
                                 }
                             }}
                         >
-                            <Typography 
-                                variant="h5" 
-                                sx={{ 
-                                    fontWeight: 800,
-                                    background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                                    backgroundClip: 'text',
-                                    WebkitBackgroundClip: 'text',
-                                    WebkitTextFillColor: 'transparent'
-                                }}
-                            >
-                                Check-IA
-                            </Typography>
+                            <Logo height={34} />
                         </Button>
                         {!isMobile && (
                             <Chip
                                 label="Beta"
                                 size="small"
                                 sx={{
-                                    ml: 1,
-                                    bgcolor: '#f59e0b',
-                                    color: 'white',
+                                    ml: 1.5,
+                                    bgcolor: 'var(--green-50)',
+                                    color: 'var(--green-700)',
                                     fontWeight: 600,
                                     fontSize: '0.7rem',
-                                    height: 20
+                                    height: 20,
+                                    borderRadius: 'var(--radius-pill)'
                                 }}
                             />
                         )}
@@ -341,15 +331,15 @@ function Navigation() {
                                     to={item.path}
                                     startIcon={<item.icon />}
                                     sx={{
-                                        color: '#475569',
+                                        color: 'var(--slate-700)',
                                         fontWeight: 500,
                                         px: 2,
                                         py: 1,
-                                        borderRadius: 2,
+                                        borderRadius: 'var(--radius-md)',
                                         textTransform: 'none',
                                         '&:hover': {
-                                            bgcolor: '#f1f5f9',
-                                            color: '#2563eb'
+                                            bgcolor: 'var(--navy-50)',
+                                            color: 'var(--navy-600)'
                                         }
                                     }}
                                 >
@@ -365,15 +355,15 @@ function Navigation() {
                                         endIcon={<ArrowDropDown />}
                                         startIcon={<ImageIcon />}
                                         sx={{
-                                            color: '#475569',
+                                            color: 'var(--slate-700)',
                                             fontWeight: 500,
                                             px: 2,
                                             py: 1,
-                                            borderRadius: 2,
+                                            borderRadius: 'var(--radius-md)',
                                             textTransform: 'none',
                                             '&:hover': {
-                                                bgcolor: '#f1f5f9',
-                                                color: '#2563eb'
+                                                bgcolor: 'var(--navy-50)',
+                                                color: 'var(--navy-600)'
                                             }
                                         }}
                                     >
@@ -385,9 +375,9 @@ function Navigation() {
                                         onClose={handleImageMenuClose}
                                         sx={{
                                             '& .MuiPaper-root': {
-                                                borderRadius: 3,
-                                                boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
-                                                border: '1px solid #f1f5f9',
+                                                borderRadius: 'var(--radius-lg)',
+                                                boxShadow: 'var(--shadow-lg)',
+                                                border: '1px solid var(--border-subtle)',
                                                 mt: 1
                                             }
                                         }}
@@ -400,12 +390,12 @@ function Navigation() {
                                                     px: 3,
                                                     py: 2,
                                                     '&:hover': {
-                                                        bgcolor: '#f8fafc'
+                                                        bgcolor: 'var(--green-50)'
                                                     }
                                                 }}
                                             >
                                                 <ListItemIcon sx={{ minWidth: 40 }}>
-                                                    <item.icon sx={{ color: '#f59e0b' }} />
+                                                    <item.icon sx={{ color: 'var(--green-500)' }} />
                                                 </ListItemIcon>
                                                 <ListItemText
                                                     primary={item.label}
@@ -413,10 +403,10 @@ function Navigation() {
                                                     sx={{
                                                         '& .MuiListItemText-primary': {
                                                             fontWeight: 600,
-                                                            color: '#0f172a'
+                                                            color: 'var(--navy-900)'
                                                         },
                                                         '& .MuiListItemText-secondary': {
-                                                            color: '#64748b',
+                                                            color: 'var(--slate-500)',
                                                             fontSize: '0.8rem'
                                                         }
                                                     }}
@@ -435,15 +425,15 @@ function Navigation() {
                                             onClick={handleLogout}
                                             startIcon={<LogoutRounded />}
                                             sx={{
-                                                color: '#64748b',
+                                                color: 'var(--slate-500)',
                                                 fontWeight: 500,
                                                 px: 2,
                                                 py: 1,
-                                                borderRadius: 2,
+                                                borderRadius: 'var(--radius-md)',
                                                 textTransform: 'none',
                                                 '&:hover': {
-                                                    bgcolor: '#fef2f2',
-                                                    color: '#ef4444'
+                                                    bgcolor: 'var(--red-50)',
+                                                    color: 'var(--red-600)'
                                                 }
                                             }}
                                         >
@@ -455,15 +445,15 @@ function Navigation() {
                                                 component={Link}
                                                 to="/login"
                                                 sx={{
-                                                    color: '#475569',
+                                                    color: 'var(--slate-700)',
                                                     fontWeight: 500,
                                                     px: 2,
                                                     py: 1,
-                                                    borderRadius: 2,
+                                                    borderRadius: 'var(--radius-md)',
                                                     textTransform: 'none',
                                                     '&:hover': {
-                                                        bgcolor: '#f1f5f9',
-                                                        color: '#2563eb'
+                                                        bgcolor: 'var(--navy-50)',
+                                                        color: 'var(--navy-600)'
                                                     }
                                                 }}
                                             >
@@ -474,17 +464,18 @@ function Navigation() {
                                                 component={Link}
                                                 to="/register"
                                                 sx={{
-                                                    bgcolor: '#2563eb',
+                                                    minHeight: 48,
+                                                    bgcolor: 'var(--navy-600)',
                                                     color: 'white',
                                                     fontWeight: 600,
                                                     px: 3,
                                                     py: 1,
-                                                    borderRadius: 2,
+                                                    borderRadius: 'var(--radius-md)',
                                                     textTransform: 'none',
                                                     boxShadow: 'none',
                                                     '&:hover': {
-                                                        bgcolor: '#1d4ed8',
-                                                        boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+                                                        bgcolor: 'var(--navy-700)',
+                                                        boxShadow: 'var(--shadow-md)'
                                                     }
                                                 }}
                                             >
@@ -502,9 +493,10 @@ function Navigation() {
                         <IconButton
                             onClick={toggleMobileDrawer}
                             sx={{
-                                color: '#475569',
+                                color: 'var(--slate-700)',
                                 '&:hover': {
-                                    bgcolor: '#f1f5f9'
+                                    bgcolor: 'var(--navy-50)',
+                                    color: 'var(--navy-600)'
                                 }
                             }}
                         >

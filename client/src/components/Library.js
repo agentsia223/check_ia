@@ -16,6 +16,7 @@ import {
     Button,
 } from "@mui/material";
 import { AuthContext } from "../utils/AuthContext";
+import Logo from "./brand/Logo";
 
 function Library() {
     const [facts, setFacts] = useState([]);
@@ -78,8 +79,9 @@ function Library() {
                 justifyContent="center"
                 alignItems="center"
                 minHeight="80vh"
+                sx={{ bgcolor: "var(--slate-50)" }}
             >
-                <CircularProgress />
+                <CircularProgress sx={{ color: "var(--navy-600)" }} />
             </Box>
         );
     }
@@ -113,27 +115,50 @@ function Library() {
 
     return (
         <Container maxWidth="md">
-            <Typography
-                variant="h3"
-                component="h1"
-                gutterBottom
-                textAlign="center"
-                marginTop={4}
+            <Box
                 sx={{
-                    backgroundColor: "#F5F5F5", // Couleur de fond verte pour attirer l'attention
-                    color: "black", // Texte en blanc pour un bon contraste
-                    padding: 2, // Espace autour du texte
-                    borderRadius: 2, // Bordures arrondies pour un effet de carte
-                    fontFamily: "'Roboto Condensed', sans-serif",
-                    // Utilisation d'une police différente pour donner un effet distinct
-                    boxShadow: "0px 4px 12px rgba(0, 0, 0, 0.1)", // Légère ombre pour donner de la profondeur
+                    mt: 4,
+                    mb: 3,
+                    px: { xs: 3, sm: 5 },
+                    py: { xs: 4, sm: 5 },
+                    background: "var(--navy-600)",
+                    borderRadius: "var(--radius-lg)",
+                    boxShadow: "var(--shadow-md)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    textAlign: "center",
+                    gap: 2,
                 }}
             >
-                Bibliothèque de Faits Vérifiés
-            </Typography>
+                <Logo white height={40} />
+                <Typography
+                    variant="h3"
+                    component="h1"
+                    gutterBottom
+                    textAlign="center"
+                    sx={{
+                        m: 0,
+                        color: "#ffffff",
+                        fontFamily: "var(--font-display)",
+                        fontWeight: 700,
+                        letterSpacing: "-0.01em",
+                    }}
+                >
+                    Bibliothèque de Faits Vérifiés
+                </Typography>
+            </Box>
 
             {error && (
-                <Alert severity="error" sx={{ marginBottom: 2 }}>
+                <Alert
+                    severity="error"
+                    sx={{
+                        marginBottom: 2,
+                        borderRadius: "var(--radius-md)",
+                        fontFamily: "var(--font-body)",
+                        border: "1px solid var(--red-200)",
+                    }}
+                >
                     {error}
                 </Alert>
             )}
@@ -145,24 +170,41 @@ function Library() {
                             return (
                                 <ListItem key={fact.id} disablePadding>
                                     <Paper
-                                        elevation={3}
+                                        elevation={0}
                                         sx={{
                                             padding: 3,
                                             width: "100%",
                                             marginBottom: 2,
-                                            backgroundColor: "#f9f9f9",
+                                            backgroundColor: "var(--surface-card)",
+                                            border: "1px solid var(--slate-200)",
+                                            borderRadius: "var(--radius-lg)",
+                                            boxShadow: "var(--shadow-sm)",
+                                            transition:
+                                                "box-shadow var(--duration-base) var(--ease-standard), transform var(--duration-base) var(--ease-standard)",
+                                            "&:hover": {
+                                                boxShadow: "var(--shadow-md)",
+                                                transform: "translateY(-1px)",
+                                            },
                                         }}
                                     >
                                         <Typography
                                             variant="h6"
                                             sx={{
                                                 marginBottom: 2,
-                                                fontWeight: "bold",
+                                                fontWeight: 700,
+                                                fontFamily: "var(--font-display)",
+                                                color: "var(--navy-900)",
+                                                lineHeight: 1.35,
                                             }}
                                         >
                                             {fact.texte}
                                         </Typography>
-                                        <Divider sx={{ marginBottom: 2 }} />
+                                        <Divider
+                                            sx={{
+                                                marginBottom: 2,
+                                                borderColor: "var(--slate-200)",
+                                            }}
+                                        />
                                         <Box
                                             display="flex"
                                             flexDirection="column"
@@ -171,18 +213,28 @@ function Library() {
                                             <Typography
                                                 variant="body2"
                                                 color="textSecondary"
+                                                sx={{
+                                                    fontFamily:
+                                                        "var(--font-mono)",
+                                                    color: "var(--slate-500)",
+                                                    fontSize: "0.8125rem",
+                                                }}
                                             >
                                                 Date : {formatDate(fact.date)}
                                             </Typography>
                                             <Box
                                                 display="flex"
                                                 flexWrap="wrap"
+                                                alignItems="center"
                                                 gap={1}
                                             >
                                                 <Typography
                                                     variant="body2"
                                                     color="textSecondary"
-                                                    sx={{ fontWeight: "bold" }}
+                                                    sx={{
+                                                        fontWeight: 700,
+                                                        color: "var(--navy-900)",
+                                                    }}
                                                 >
                                                     Mots-clés :
                                                 </Typography>
@@ -192,14 +244,18 @@ function Library() {
                                                             <Typography
                                                                 key={index}
                                                                 variant="body2"
-                                                                color="textSecondary"
+                                                                component="span"
                                                                 sx={{
                                                                     backgroundColor:
-                                                                        "#e0f7fa",
+                                                                        "var(--navy-50)",
+                                                                    color: "var(--navy-700)",
+                                                                    fontWeight: 600,
+                                                                    border: "1px solid var(--navy-100)",
                                                                     padding:
-                                                                        "2px 8px",
+                                                                        "2px 10px",
                                                                     borderRadius:
-                                                                        "12px",
+                                                                        "var(--radius-pill)",
+                                                                    lineHeight: 1.6,
                                                                 }}
                                                             >
                                                                 {keyword.mot}
@@ -209,7 +265,9 @@ function Library() {
                                                 ) : (
                                                     <Typography
                                                         variant="body2"
-                                                        color="textSecondary"
+                                                        sx={{
+                                                            color: "var(--slate-500)",
+                                                        }}
                                                     >
                                                         Aucun mot-clé disponible
                                                     </Typography>
@@ -217,7 +275,9 @@ function Library() {
                                             </Box>
                                             <Typography
                                                 variant="body2"
-                                                color="textSecondary"
+                                                sx={{
+                                                    color: "var(--slate-500)",
+                                                }}
                                             >
                                                 Source :{" "}
                                                 {fact.source ? (
@@ -225,6 +285,13 @@ function Library() {
                                                         href={fact.source}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
+                                                        style={{
+                                                            fontFamily:
+                                                                "var(--font-mono)",
+                                                            fontSize: "0.8125rem",
+                                                            color: "var(--navy-600)",
+                                                            wordBreak: "break-all",
+                                                        }}
                                                     >
                                                         {fact.source}
                                                     </a>
@@ -250,16 +317,50 @@ function Library() {
                             variant="outlined"
                             onClick={handlePreviousPage}
                             disabled={currentPage === 1}
+                            sx={{
+                                minHeight: "var(--hit-target)",
+                                px: 3,
+                                borderRadius: "var(--radius-md)",
+                                textTransform: "none",
+                                fontWeight: 600,
+                                color: "var(--navy-600)",
+                                borderColor: "var(--navy-600)",
+                                "&:hover": {
+                                    borderColor: "var(--navy-700)",
+                                    backgroundColor: "var(--navy-50)",
+                                },
+                            }}
                         >
                             Précédent
                         </Button>
-                        <Typography variant="body1">
+                        <Typography
+                            variant="body1"
+                            sx={{
+                                fontFamily: "var(--font-mono)",
+                                color: "var(--navy-900)",
+                                fontWeight: 500,
+                            }}
+                        >
                             Page {currentPage} sur {totalPages}
                         </Typography>
                         <Button
-                            variant="outlined"
+                            variant="contained"
                             onClick={handleNextPage}
                             disabled={currentPage === totalPages}
+                            sx={{
+                                minHeight: "var(--hit-target)",
+                                px: 3,
+                                borderRadius: "var(--radius-md)",
+                                textTransform: "none",
+                                fontWeight: 600,
+                                color: "#ffffff",
+                                backgroundColor: "var(--navy-600)",
+                                boxShadow: "var(--shadow-xs)",
+                                "&:hover": {
+                                    backgroundColor: "var(--navy-700)",
+                                    boxShadow: "var(--shadow-sm)",
+                                },
+                            }}
                         >
                             Suivant
                         </Button>
@@ -270,7 +371,12 @@ function Library() {
                     <Typography
                         variant="h6"
                         textAlign="center"
-                        sx={{ marginTop: 4 }}
+                        sx={{
+                            marginTop: 4,
+                            fontFamily: "var(--font-display)",
+                            color: "var(--slate-500)",
+                            fontWeight: 600,
+                        }}
                     >
                         Aucun fait vérifié disponible pour le moment.
                     </Typography>

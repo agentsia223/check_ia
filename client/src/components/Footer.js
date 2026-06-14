@@ -7,6 +7,7 @@ import {
     LinkedIn,
     GitHub,
 } from "@mui/icons-material";
+import Logo from "./brand/Logo";
 
 function Footer() {
     const socialLinks = [
@@ -17,12 +18,22 @@ function Footer() {
         { icon: GitHub, href: "#" },
     ];
 
+    const linkSx = {
+        textDecoration: "none",
+        color: "rgba(255, 255, 255, 0.78)",
+        fontFamily: "var(--font-body)",
+        transition: "color 0.2s ease-in-out",
+        "&:hover": {
+            color: "var(--green-300, #86e08a)",
+        },
+    };
+
     return (
         <Box
             component="footer"
             sx={{
-                bgcolor: "white",
-                borderTop: "1px solid #e2e8f0",
+                bgcolor: "var(--navy-600)",
+                color: "rgba(255, 255, 255, 0.78)",
                 py: 6,
                 mt: "auto",
             }}
@@ -38,11 +49,15 @@ function Footer() {
                     {/* About Section */}
                     <Grid item xs={12} sm={4}>
                         <Box sx={{ mb: 4 }}>
+                            <Box sx={{ mb: 2 }}>
+                                <Logo white height={36} />
+                            </Box>
                             <Typography
                                 variant="h6"
                                 sx={{
+                                    fontFamily: "var(--font-display)",
                                     fontWeight: 700,
-                                    color: "#0f172a",
+                                    color: "#ffffff",
                                     mb: 2,
                                 }}
                             >
@@ -51,7 +66,7 @@ function Footer() {
                             <Typography
                                 variant="body2"
                                 sx={{
-                                    color: "#64748b",
+                                    color: "rgba(255, 255, 255, 0.78)",
                                     lineHeight: 1.6,
                                 }}
                             >
@@ -69,8 +84,9 @@ function Footer() {
                         <Typography
                             variant="h6"
                             sx={{
+                                fontFamily: "var(--font-display)",
                                 fontWeight: 700,
-                                color: "#0f172a",
+                                color: "#ffffff",
                                 mb: 2,
                             }}
                         >
@@ -87,12 +103,7 @@ function Footer() {
                                 component={Link}
                                 to="/library"
                                 color="inherit"
-                                sx={{
-                                    textDecoration: "none",
-                                    "&:hover": {
-                                        color: "#2563eb",
-                                    },
-                                }}
+                                sx={linkSx}
                             >
                                 Bibliothèque
                             </Link>
@@ -100,12 +111,7 @@ function Footer() {
                                 component={Link}
                                 to="/submit"
                                 color="inherit"
-                                sx={{
-                                    textDecoration: "none",
-                                    "&:hover": {
-                                        color: "#2563eb",
-                                    },
-                                }}
+                                sx={linkSx}
                             >
                                 Vérifier du Texte
                             </Link>
@@ -113,12 +119,7 @@ function Footer() {
                                 component={Link}
                                 to="/verify-image"
                                 color="inherit"
-                                sx={{
-                                    textDecoration: "none",
-                                    "&:hover": {
-                                        color: "#2563eb",
-                                    },
-                                }}
+                                sx={linkSx}
                             >
                                 Vérifier des Images
                             </Link>
@@ -126,12 +127,7 @@ function Footer() {
                                 component={Link}
                                 to="/detect-ai-image"
                                 color="inherit"
-                                sx={{
-                                    textDecoration: "none",
-                                    "&:hover": {
-                                        color: "#2563eb",
-                                    },
-                                }}
+                                sx={linkSx}
                             >
                                 Détection IA
                             </Link>
@@ -191,9 +187,12 @@ function Footer() {
                             rel="noopener noreferrer"
                             size="small"
                             sx={{
-                                color: "#64748b",
+                                color: "rgba(255, 255, 255, 0.78)",
+                                width: 48,
+                                height: 48,
                                 "&:hover": {
-                                    color: "#2563eb",
+                                    color: "#ffffff",
+                                    bgcolor: "rgba(255, 255, 255, 0.12)",
                                     transform: "scale(1.1)",
                                     transition: "transform 0.2s ease-in-out",
                                 },
@@ -208,7 +207,7 @@ function Footer() {
                 <Box
                     sx={{
                         mt: 4,
-                        borderTop: "1px solid #e2e8f0",
+                        borderTop: "1px solid rgba(255, 255, 255, 0.18)",
                         pt: 2,
                         textAlign: "center",
                     }}
@@ -216,11 +215,12 @@ function Footer() {
                     <Typography
                         variant="body2"
                         sx={{
-                            color: "#64748b",
+                            color: "rgba(255, 255, 255, 0.78)",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
                             gap: 2,
+                            flexWrap: "wrap",
                         }}
                     >
                         {new Date().getFullYear()} Check-IA. Tous droits
@@ -228,24 +228,14 @@ function Footer() {
                         <Link
                             href="/terms"
                             color="inherit"
-                            sx={{
-                                textDecoration: "none",
-                                "&:hover": {
-                                    color: "#2563eb",
-                                },
-                            }}
+                            sx={linkSx}
                         >
                             Conditions d'utilisation
                         </Link>
                         <Link
                             href="/privacy"
                             color="inherit"
-                            sx={{
-                                textDecoration: "none",
-                                "&:hover": {
-                                    color: "#2563eb",
-                                },
-                            }}
+                            sx={linkSx}
                         >
                             Politique de confidentialité
                         </Link>
