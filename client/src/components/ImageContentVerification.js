@@ -8,7 +8,6 @@ import {
     Alert,
     Card,
     CardContent,
-    Chip,
     Grid,
     Fade,
     LinearProgress,
@@ -16,17 +15,16 @@ import {
 } from "@mui/material";
 import {
     CloudUpload,
-    CheckCircle,
-    Cancel,
-    Warning,
     HourglassEmpty,
-    Info,
     PhotoCamera,
 } from "@mui/icons-material";
 import { styled } from "@mui/material/styles";
 import { supabase } from "../lib/supabase";
 import { AuthContext } from "../utils/AuthContext";
 import { API_BASE_URL } from "../config";
+import Logo from "./brand/Logo";
+import VerdictBadge from "./brand/VerdictBadge";
+import ConfidenceMeter from "./brand/ConfidenceMeter";
 
 const VisuallyHiddenInput = styled("input")({
     clip: "rect(0 0 0 0)",
@@ -44,42 +42,48 @@ const ImagePreview = styled("img")({
     maxWidth: "100%",
     maxHeight: "300px",
     objectFit: "contain",
-    borderRadius: "12px",
-    boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-    border: "1px solid rgba(0,0,0,0.1)",
+    borderRadius: "var(--radius-md)",
+    boxShadow: "var(--shadow-md)",
+    border: "1px solid var(--border-subtle)",
 });
 
 const HeroSection = styled(Box)(({ theme }) => ({
-    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-    borderRadius: "20px",
+    background: "var(--navy-600)",
+    borderRadius: "var(--radius-lg)",
     padding: theme.spacing(6, 4),
     textAlign: "center",
     marginBottom: theme.spacing(4),
-    color: "white",
+    color: "#ffffff",
     position: "relative",
     overflow: "hidden",
-    "&::before": {
-        content: '""',
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: "rgba(255,255,255,0.1)",
-        backdropFilter: "blur(10px)",
-    },
 }));
 
-const StyledCard = styled(Card)(({ theme }) => ({
-    borderRadius: "16px",
-    border: "1px solid rgba(0,0,0,0.08)",
-    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+const StyledCard = styled(Card)(() => ({
+    borderRadius: "var(--radius-lg)",
+    border: "1px solid var(--border-subtle)",
+    backgroundColor: "#ffffff",
+    boxShadow: "var(--shadow-sm)",
     transition: "all 0.3s ease",
     "&:hover": {
         transform: "translateY(-2px)",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
+        boxShadow: "var(--shadow-md)",
     },
 }));
+
+// Map verification status to the brand verdict vocabulary.
+const statusToVerdict = (status) => {
+    switch (status) {
+        case "VRAIE":
+            return "true";
+        case "FAUSSE":
+            return "false";
+        case "INDÉTERMINÉE":
+            return "misleading";
+        case "ANALYSÉE":
+        default:
+            return "unverified";
+    }
+};
 
 function ImageContentVerification() {
     const [selectedImage, setSelectedImage] = useState(null);
@@ -259,7 +263,7 @@ function ImageContentVerification() {
 
                     if (data.state === 'SUCCESS' && data.result) {
                         const resultData = data.result;
-                        
+
                         // Check if this is the upload task completion
                         if (resultData.success && resultData.task_id && !resultData.status) {
                             // This is the upload task - switch to polling the verification task
@@ -267,7 +271,7 @@ function ImageContentVerification() {
                             setTaskId(resultData.task_id); // This will trigger new polling for verification task
                             return;
                         }
-                        
+
                         // This is the verification task completion
                         if (resultData.success && resultData.status) {
                             clearInterval(interval);
@@ -306,36 +310,6 @@ function ImageContentVerification() {
         };
     }, [taskId, user]);
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case "VRAIE":
-                return "success";
-            case "FAUSSE":
-                return "error";
-            case "INDÉTERMINÉE":
-                return "warning";
-            case "ANALYSÉE":
-                return "info";
-            default:
-                return "default";
-        }
-    };
-
-    const getStatusIcon = (status) => {
-        switch (status) {
-            case "VRAIE":
-                return <CheckCircle />;
-            case "FAUSSE":
-                return <Cancel />;
-            case "INDÉTERMINÉE":
-                return <Warning />;
-            case "ANALYSÉE":
-                return <Info />;
-            default:
-                return <HourglassEmpty />;
-        }
-    };
-
     const getStatusText = (status) => {
         switch (status) {
             case "VRAIE":
@@ -357,8 +331,16 @@ function ImageContentVerification() {
             <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, lg: 4 }, py: 4 }}>
                 <HeroSection>
                     <Box sx={{ position: "relative", zIndex: 1 }}>
+                        <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+                            <Logo white height={44} />
+                        </Box>
                         <PhotoCamera sx={{ fontSize: 64, mb: 2, opacity: 0.9 }} />
-                        <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+                        <Typography
+                            variant="h3"
+                            component="h1"
+                            gutterBottom
+                            sx={{ fontFamily: "var(--font-display)", fontWeight: 700 }}
+                        >
                             Vérification d'Image
                         </Typography>
                         <Typography variant="h6" sx={{ opacity: 0.9, maxWidth: 600, mx: "auto" }}>
@@ -369,10 +351,14 @@ function ImageContentVerification() {
 
                 <StyledCard>
                     <CardContent sx={{ p: 4, textAlign: "center" }}>
-                        <Typography variant="h5" gutterBottom sx={{ color: "#0f172a", fontWeight: 600 }}>
+                        <Typography
+                            variant="h5"
+                            gutterBottom
+                            sx={{ fontFamily: "var(--font-display)", color: "var(--navy-900)", fontWeight: 600 }}
+                        >
                             Connexion requise
                         </Typography>
-                        <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                        <Typography variant="body1" sx={{ color: "var(--slate-500)", mb: 3 }}>
                             Veuillez vous connecter pour accéder à la vérification d'images.
                         </Typography>
                         <Button
@@ -380,15 +366,19 @@ function ImageContentVerification() {
                             size="large"
                             href="/login"
                             sx={{
-                                background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                                bgcolor: "var(--navy-600)",
+                                color: "#ffffff",
                                 px: 4,
                                 py: 1.5,
-                                borderRadius: "12px",
+                                minHeight: 48,
+                                borderRadius: "var(--radius-md)",
                                 fontWeight: 600,
                                 textTransform: "none",
                                 fontSize: "1.1rem",
+                                boxShadow: "var(--shadow-sm)",
                                 "&:hover": {
-                                    background: "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)",
+                                    bgcolor: "var(--navy-700)",
+                                    boxShadow: "var(--shadow-md)",
                                     transform: "translateY(-2px)",
                                 },
                             }}
@@ -406,12 +396,20 @@ function ImageContentVerification() {
             {/* Hero Section */}
             <HeroSection>
                 <Box sx={{ position: "relative", zIndex: 1 }}>
+                    <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+                        <Logo white height={44} />
+                    </Box>
                     <PhotoCamera sx={{ fontSize: 64, mb: 2, opacity: 0.9 }} />
-                    <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
+                    <Typography
+                        variant="h3"
+                        component="h1"
+                        gutterBottom
+                        sx={{ fontFamily: "var(--font-display)", fontWeight: 700 }}
+                    >
                         Vérification d'Image
                     </Typography>
                     <Typography variant="h6" sx={{ opacity: 0.9, maxWidth: 600, mx: "auto" }}>
-                        Téléchargez une image et optionnellement une affirmation à vérifier. 
+                        Téléchargez une image et optionnellement une affirmation à vérifier.
                         Notre IA analysera le contenu et déterminera la véracité.
                     </Typography>
                 </Box>
@@ -424,10 +422,14 @@ function ImageContentVerification() {
                         <Grid container spacing={4}>
                             {/* Image Upload Section */}
                             <Grid item xs={12} md={6}>
-                                <Typography variant="h6" gutterBottom sx={{ color: "#0f172a", fontWeight: 600 }}>
+                                <Typography
+                                    variant="h6"
+                                    gutterBottom
+                                    sx={{ fontFamily: "var(--font-display)", color: "var(--navy-900)", fontWeight: 600 }}
+                                >
                                     Sélectionner une image
                                 </Typography>
-                                
+
                                 <Button
                                     component="label"
                                     variant="outlined"
@@ -436,14 +438,15 @@ function ImageContentVerification() {
                                     size="large"
                                     sx={{
                                         py: 2,
-                                        borderRadius: "12px",
-                                        borderColor: "#e2e8f0",
-                                        color: "#64748b",
+                                        minHeight: 48,
+                                        borderRadius: "var(--radius-md)",
+                                        borderColor: "var(--border-subtle)",
+                                        color: "var(--slate-500)",
                                         fontWeight: 500,
                                         textTransform: "none",
                                         "&:hover": {
-                                            borderColor: "#2563eb",
-                                            background: "rgba(37, 99, 235, 0.04)",
+                                            borderColor: "var(--navy-600)",
+                                            background: "rgba(40, 52, 138, 0.04)",
                                         },
                                     }}
                                 >
@@ -461,8 +464,7 @@ function ImageContentVerification() {
                                             <ImagePreview src={imagePreview} alt="Aperçu" />
                                             <Typography
                                                 variant="body2"
-                                                color="text.secondary"
-                                                sx={{ mt: 1, fontWeight: 500 }}
+                                                sx={{ mt: 1, fontWeight: 500, color: "var(--slate-500)" }}
                                             >
                                                 {selectedImage?.name}
                                             </Typography>
@@ -473,10 +475,14 @@ function ImageContentVerification() {
 
                             {/* Claim Text Section */}
                             <Grid item xs={12} md={6}>
-                                <Typography variant="h6" gutterBottom sx={{ color: "#0f172a", fontWeight: 600 }}>
+                                <Typography
+                                    variant="h6"
+                                    gutterBottom
+                                    sx={{ fontFamily: "var(--font-display)", color: "var(--navy-900)", fontWeight: 600 }}
+                                >
                                     Affirmation à vérifier
                                 </Typography>
-                                
+
                                 <TextField
                                     fullWidth
                                     multiline
@@ -487,18 +493,21 @@ function ImageContentVerification() {
                                     variant="outlined"
                                     sx={{
                                         "& .MuiOutlinedInput-root": {
-                                            borderRadius: "12px",
-                                            background: "#f8fafc",
+                                            borderRadius: "var(--radius-md)",
+                                            background: "var(--slate-50)",
                                             "& fieldset": {
-                                                borderColor: "#e2e8f0",
+                                                borderColor: "var(--border-subtle)",
                                             },
                                             "&:hover fieldset": {
-                                                borderColor: "#2563eb",
+                                                borderColor: "var(--navy-600)",
+                                            },
+                                            "&.Mui-focused fieldset": {
+                                                borderColor: "var(--navy-600)",
                                             },
                                         },
                                     }}
                                 />
-                                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                                <Typography variant="caption" sx={{ mt: 1, display: "block", color: "var(--slate-500)" }}>
                                     Laissez vide pour une analyse générale de l'image
                                 </Typography>
                             </Grid>
@@ -506,7 +515,7 @@ function ImageContentVerification() {
 
                         {/* Error Alert */}
                         {error && (
-                            <Alert severity="error" sx={{ mt: 3, borderRadius: "12px" }}>
+                            <Alert severity="error" sx={{ mt: 3, borderRadius: "var(--radius-md)" }}>
                                 {error}
                             </Alert>
                         )}
@@ -519,21 +528,25 @@ function ImageContentVerification() {
                                 size="large"
                                 disabled={loading || !selectedImage}
                                 sx={{
-                                    background: loading 
-                                        ? "linear-gradient(135deg, #64748b 0%, #475569 100%)"
-                                        : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                                    bgcolor: loading ? "var(--slate-500)" : "var(--green-500)",
+                                    color: "#ffffff",
                                     px: 6,
                                     py: 1.5,
-                                    borderRadius: "12px",
+                                    minHeight: 48,
+                                    borderRadius: "var(--radius-md)",
                                     fontWeight: 600,
                                     textTransform: "none",
                                     fontSize: "1.1rem",
                                     minWidth: 200,
+                                    boxShadow: "var(--shadow-sm)",
                                     "&:hover": {
-                                        background: loading 
-                                            ? "linear-gradient(135deg, #64748b 0%, #475569 100%)"
-                                            : "linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%)",
+                                        bgcolor: loading ? "var(--slate-500)" : "var(--green-600)",
+                                        boxShadow: loading ? "var(--shadow-sm)" : "var(--shadow-md)",
                                         transform: loading ? "none" : "translateY(-2px)",
+                                    },
+                                    "&.Mui-disabled": {
+                                        bgcolor: "var(--slate-300)",
+                                        color: "#ffffff",
                                     },
                                 }}
                             >
@@ -549,23 +562,27 @@ function ImageContentVerification() {
                 <Fade in>
                     <StyledCard sx={{ mt: 4 }}>
                         <CardContent sx={{ p: 4, textAlign: "center" }}>
-                            <HourglassEmpty sx={{ fontSize: 48, color: "#f59e0b", mb: 2 }} />
-                            <Typography variant="h6" gutterBottom sx={{ color: "#0f172a", fontWeight: 600 }}>
+                            <HourglassEmpty sx={{ fontSize: 48, color: "var(--navy-600)", mb: 2 }} />
+                            <Typography
+                                variant="h6"
+                                gutterBottom
+                                sx={{ fontFamily: "var(--font-display)", color: "var(--navy-900)", fontWeight: 600 }}
+                            >
                                 Analyse de l'image en cours
                             </Typography>
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            <Typography variant="body2" sx={{ mb: 3, color: "var(--slate-500)" }}>
                                 Veuillez patienter pendant que notre IA analyse le contenu de votre image...
                             </Typography>
-                            <LinearProgress 
+                            <LinearProgress
                                 variant="indeterminate"
-                                sx={{ 
-                                    borderRadius: "4px", 
+                                sx={{
+                                    borderRadius: "var(--radius-pill)",
                                     height: "8px",
-                                    background: "#f1f5f9",
+                                    background: "var(--slate-100)",
                                     "& .MuiLinearProgress-bar": {
-                                        background: "linear-gradient(90deg, #f59e0b, #d97706)",
+                                        background: "var(--navy-600)",
                                     }
-                                }} 
+                                }}
                             />
                         </CardContent>
                     </StyledCard>
@@ -577,57 +594,47 @@ function ImageContentVerification() {
                 <Fade in timeout={500}>
                     <StyledCard sx={{ mt: 4 }}>
                         <CardContent sx={{ p: 4 }}>
-                            <Typography variant="h5" gutterBottom sx={{ color: "#0f172a", fontWeight: 700 }}>
+                            <Typography
+                                variant="h5"
+                                gutterBottom
+                                sx={{ fontFamily: "var(--font-display)", color: "var(--navy-900)", fontWeight: 700 }}
+                            >
                                 Résultat de la vérification
                             </Typography>
-                            
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 3 }}>
-                                <Chip
-                                    icon={getStatusIcon(result.status)}
+
+                            <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: 2, mb: 3 }}>
+                                <VerdictBadge
+                                    verdict={statusToVerdict(result.status)}
+                                    variant="soft"
+                                    size="lg"
                                     label={getStatusText(result.status)}
-                                    color={getStatusColor(result.status)}
-                                    sx={{ 
-                                        fontSize: "0.9rem",
-                                        fontWeight: 600,
-                                        px: 1,
-                                        height: 40,
-                                    }}
                                 />
-                                <Typography variant="body1" color="text.secondary">
-                                    <strong>Confiance:</strong> {result.confidence}%
-                                </Typography>
                             </Box>
 
-                            <LinearProgress
-                                variant="determinate"
-                                value={result.confidence}
-                                sx={{ 
-                                    mb: 3,
-                                    borderRadius: "4px", 
-                                    height: "8px",
-                                    background: "#f1f5f9",
-                                    "& .MuiLinearProgress-bar": {
-                                        background: result.status === "VRAIE" 
-                                            ? "linear-gradient(90deg, #10b981, #059669)"
-                                            : result.status === "FAUSSE"
-                                            ? "linear-gradient(90deg, #ef4444, #dc2626)"
-                                            : "linear-gradient(90deg, #f59e0b, #d97706)",
-                                    }
-                                }}
-                            />
+                            <Box sx={{ mb: 3 }}>
+                                <ConfidenceMeter
+                                    value={result.confidence}
+                                    verdict={statusToVerdict(result.status)}
+                                    label="Confiance"
+                                />
+                            </Box>
 
-                            <Divider sx={{ mb: 3 }} />
+                            <Divider sx={{ mb: 3, borderColor: "var(--border-subtle)" }} />
 
-                            <Typography variant="h6" gutterBottom sx={{ color: "#0f172a", fontWeight: 600 }}>
+                            <Typography
+                                variant="h6"
+                                gutterBottom
+                                sx={{ fontFamily: "var(--font-display)", color: "var(--navy-900)", fontWeight: 600 }}
+                            >
                                 Analyse détaillée
                             </Typography>
 
                             {result.explanation && (
-                                <Box sx={{ 
-                                    p: 3, 
-                                    background: "#f8fafc", 
-                                    borderRadius: "12px",
-                                    border: "1px solid #e2e8f0",
+                                <Box sx={{
+                                    p: 3,
+                                    background: "var(--slate-50)",
+                                    borderRadius: "var(--radius-md)",
+                                    border: "1px solid var(--border-subtle)",
                                     mb: 3
                                 }}>
                                     {formatAnalysisText(result.explanation)}
@@ -635,18 +642,21 @@ function ImageContentVerification() {
                             )}
 
                             {result.details && Object.keys(result.details).length > 0 && (
-                                <Box sx={{ 
-                                    p: 3, 
-                                    background: "#fefefe", 
-                                    borderRadius: "12px",
-                                    border: "1px solid #e2e8f0"
+                                <Box sx={{
+                                    p: 3,
+                                    background: "#ffffff",
+                                    borderRadius: "var(--radius-md)",
+                                    border: "1px solid var(--border-subtle)"
                                 }}>
-                                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                                    <Typography variant="body2" gutterBottom sx={{ color: "var(--slate-500)" }}>
                                         <strong>Type de vérification:</strong> Contenu d'image
                                     </Typography>
                                     {claimText && (
-                                        <Typography variant="body2" color="text.secondary">
-                                            <strong>Affirmation vérifiée:</strong> {claimText}
+                                        <Typography variant="body2" sx={{ color: "var(--slate-500)" }}>
+                                            <strong>Affirmation vérifiée:</strong>{" "}
+                                            <Box component="span" sx={{ fontFamily: "var(--font-mono)" }}>
+                                                {claimText}
+                                            </Box>
                                         </Typography>
                                     )}
                                 </Box>
@@ -654,8 +664,7 @@ function ImageContentVerification() {
 
                             <Typography
                                 variant="caption"
-                                color="text.secondary"
-                                sx={{ mt: 3, display: "block", textAlign: "center" }}
+                                sx={{ mt: 3, display: "block", textAlign: "center", color: "var(--slate-500)", fontFamily: "var(--font-mono)" }}
                             >
                                 Vérification effectuée le {new Date(result.date).toLocaleString("fr-FR")}
                             </Typography>

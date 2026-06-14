@@ -10,24 +10,22 @@ import {
     Button,
     Box,
     Alert,
-    Card,
-    CardContent,
-    Chip,
     Grid,
     LinearProgress,
     Fade,
     Paper,
-    Link,
 } from "@mui/material";
 import {
     FactCheck,
     Verified,
     Warning,
     HourglassEmpty,
-    OpenInNew,
     Search,
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
+import Logo from "./brand/Logo";
+import VerdictBadge from "./brand/VerdictBadge";
+import SourceCard from "./brand/SourceCard";
 
 // Fallback responses si aucune explication détaillée n'est disponible
 const fallbackResponses = {
@@ -148,25 +146,34 @@ function SubmitFact() {
         switch (status) {
             case "vérifié":
                 return {
-                    color: "#10b981",
-                    bgcolor: "#f0fdf4",
-                    icon: <Verified sx={{ fontSize: 48, color: "#10b981" }} />,
+                    verdict: "true",
+                    color: "var(--green-600)",
+                    bgcolor: "var(--green-50)",
+                    border: "var(--green-200)",
+                    severity: "success",
+                    icon: <Verified sx={{ fontSize: 48, color: "var(--green-500)" }} />,
                     title: "Information Vérifiée",
                     chip: "Fiable",
                 };
             case "rejeté":
                 return {
-                    color: "#ef4444",
-                    bgcolor: "#fef2f2",
-                    icon: <Warning sx={{ fontSize: 48, color: "#ef4444" }} />,
+                    verdict: "false",
+                    color: "var(--red-700)",
+                    bgcolor: "var(--red-50)",
+                    border: "var(--red-200)",
+                    severity: "error",
+                    icon: <Warning sx={{ fontSize: 48, color: "var(--red-600)" }} />,
                     title: "Information Douteuse",
                     chip: "Non Fiable",
                 };
             default:
                 return {
-                    color: "#f59e0b",
-                    bgcolor: "#fefbeb",
-                    icon: <HourglassEmpty sx={{ fontSize: 48, color: "#f59e0b" }} />,
+                    verdict: "unverified",
+                    color: "var(--amber-700)",
+                    bgcolor: "var(--amber-50)",
+                    border: "var(--amber-200)",
+                    severity: "warning",
+                    icon: <HourglassEmpty sx={{ fontSize: 48, color: "var(--amber-500)" }} />,
                     title: "Vérification en Cours",
                     chip: "En Analyse",
                 };
@@ -175,28 +182,44 @@ function SubmitFact() {
 
     if (!isLoggedIn) {
         return (
-            <Box sx={{ minHeight: "80vh", bgcolor: "#f8fafc" }}>
+            <Box sx={{ minHeight: "80vh", bgcolor: "var(--slate-50)" }}>
                 <Container maxWidth="xl" sx={{ py: 8, px: { xs: 2, sm: 4, md: 6 } }}>
                     <Grid container justifyContent="center">
                         <Grid item xs={12} md={8} lg={6}>
-                            <Paper 
-                                elevation={0} 
-                                sx={{ 
-                                    p: 6, 
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 6,
                                     textAlign: "center",
-                                    borderRadius: 3,
-                                    border: "1px solid #e2e8f0"
+                                    borderRadius: "var(--radius-lg)",
+                                    border: "1px solid var(--slate-200)",
+                                    boxShadow: "var(--shadow-sm)",
+                                    bgcolor: "#fff",
                                 }}
                             >
-                                <FactCheck sx={{ fontSize: 64, color: "#64748b", mb: 2 }} />
+                                <Box
+                                    sx={{
+                                        width: 84,
+                                        height: 84,
+                                        mx: "auto",
+                                        mb: 3,
+                                        borderRadius: "var(--radius-lg)",
+                                        bgcolor: "var(--navy-50)",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <FactCheck sx={{ fontSize: 48, color: "var(--navy-600)" }} />
+                                </Box>
                                 <Typography
                                     variant="h4"
                                     component="h1"
-                                    sx={{ fontWeight: 700, color: "#0f172a", mb: 2 }}
+                                    sx={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--navy-900)", mb: 2 }}
                                 >
                                     Accès Requis
                                 </Typography>
-                                <Typography variant="body1" sx={{ color: "#64748b", fontSize: "1.1rem" }}>
+                                <Typography variant="body1" sx={{ color: "var(--slate-500)", fontSize: "1.1rem" }}>
                                     Vous devez être connecté pour utiliser notre outil de vérification d'informations.
                                 </Typography>
                                 <Button
@@ -206,13 +229,16 @@ function SubmitFact() {
                                         mt: 3,
                                         px: 4,
                                         py: 1.5,
+                                        minHeight: 48,
                                         fontSize: "1.1rem",
                                         fontWeight: 600,
-                                        borderRadius: 2,
-                                        background: "linear-gradient(45deg, #2563eb, #3b82f6)",
+                                        borderRadius: "var(--radius-md)",
+                                        boxShadow: "var(--shadow-sm)",
+                                        bgcolor: "var(--navy-600)",
                                         "&:hover": {
-                                            background: "linear-gradient(45deg, #1d4ed8, #2563eb)",
-                                        }
+                                            bgcolor: "var(--navy-700)",
+                                            boxShadow: "var(--shadow-md)",
+                                        },
                                     }}
                                 >
                                     Se Connecter
@@ -226,20 +252,23 @@ function SubmitFact() {
     }
 
     return (
-        <Box sx={{ minHeight: "80vh", bgcolor: "#f8fafc" }}>
+        <Box sx={{ minHeight: "80vh", bgcolor: "var(--slate-50)" }}>
             <ToastContainer />
-            
+
             {/* Hero Section */}
-            <Box sx={{ bgcolor: "white", borderBottom: "1px solid #e2e8f0" }}>
-                <Container maxWidth="xl" sx={{ py: 6, px: { xs: 2, sm: 4, md: 6 } }}>
+            <Box sx={{ bgcolor: "var(--navy-600)" }}>
+                <Container maxWidth="xl" sx={{ py: 7, px: { xs: 2, sm: 4, md: 6 } }}>
                     <Box sx={{ textAlign: "center", maxWidth: 800, mx: "auto" }}>
-                        <FactCheck sx={{ fontSize: 64, color: "#2563eb", mb: 2 }} />
+                        <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+                            <Logo white height={44} />
+                        </Box>
                         <Typography
                             variant="h2"
                             component="h1"
                             sx={{
-                                fontWeight: 800,
-                                color: "#0f172a",
+                                fontFamily: "var(--font-display)",
+                                fontWeight: 700,
+                                color: "#fff",
                                 mb: 2,
                                 fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" }
                             }}
@@ -249,7 +278,7 @@ function SubmitFact() {
                         <Typography
                             variant="h6"
                             sx={{
-                                color: "#64748b",
+                                color: "rgba(255, 255, 255, 0.82)",
                                 fontWeight: 400,
                                 lineHeight: 1.6,
                                 maxWidth: 600,
@@ -267,12 +296,14 @@ function SubmitFact() {
                 <Grid container spacing={4} justifyContent="center">
                     <Grid item xs={12} lg={8}>
                         {/* Submission Form */}
-                        <Paper 
-                            elevation={0} 
-                            sx={{ 
-                                p: 6, 
-                                borderRadius: 3, 
-                                border: "1px solid #e2e8f0",
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                p: 6,
+                                borderRadius: "var(--radius-lg)",
+                                border: "1px solid var(--slate-200)",
+                                boxShadow: "var(--shadow-sm)",
+                                bgcolor: "#fff",
                                 mb: 4
                             }}
                         >
@@ -280,7 +311,7 @@ function SubmitFact() {
                                 <Box sx={{ mb: 4 }}>
                                     <Typography
                                         variant="h6"
-                                        sx={{ fontWeight: 600, color: "#0f172a", mb: 2 }}
+                                        sx={{ fontFamily: "var(--font-display)", fontWeight: 600, color: "var(--navy-900)", mb: 2 }}
                                     >
                                         Information à vérifier
                                     </Typography>
@@ -295,17 +326,20 @@ function SubmitFact() {
                                         variant="outlined"
                                         sx={{
                                             "& .MuiOutlinedInput-root": {
-                                                borderRadius: 2,
-                                                backgroundColor: "#f8fafc",
+                                                borderRadius: "var(--radius-md)",
+                                                backgroundColor: "var(--slate-50)",
                                                 "& fieldset": {
-                                                    borderColor: "#e2e8f0",
+                                                    borderColor: "var(--slate-200)",
                                                 },
                                                 "&:hover fieldset": {
-                                                    borderColor: "#cbd5e1",
+                                                    borderColor: "var(--slate-300)",
                                                 },
                                                 "&.Mui-focused fieldset": {
-                                                    borderColor: "#2563eb",
+                                                    borderColor: "var(--navy-600)",
                                                 }
+                                            },
+                                            "& label.Mui-focused": {
+                                                color: "var(--navy-600)",
                                             }
                                         }}
                                     />
@@ -314,7 +348,7 @@ function SubmitFact() {
                                 <Box sx={{ mb: 4 }}>
                                     <Typography
                                         variant="h6"
-                                        sx={{ fontWeight: 600, color: "#0f172a", mb: 2 }}
+                                        sx={{ fontFamily: "var(--font-display)", fontWeight: 600, color: "var(--navy-900)", mb: 2 }}
                                     >
                                         Source (optionnel)
                                     </Typography>
@@ -328,17 +362,21 @@ function SubmitFact() {
                                         placeholder="https://exemple.com/article"
                                         sx={{
                                             "& .MuiOutlinedInput-root": {
-                                                borderRadius: 2,
-                                                backgroundColor: "#f8fafc",
+                                                borderRadius: "var(--radius-md)",
+                                                backgroundColor: "var(--slate-50)",
+                                                fontFamily: "var(--font-mono)",
                                                 "& fieldset": {
-                                                    borderColor: "#e2e8f0",
+                                                    borderColor: "var(--slate-200)",
                                                 },
                                                 "&:hover fieldset": {
-                                                    borderColor: "#cbd5e1",
+                                                    borderColor: "var(--slate-300)",
                                                 },
                                                 "&.Mui-focused fieldset": {
-                                                    borderColor: "#2563eb",
+                                                    borderColor: "var(--navy-600)",
                                                 }
+                                            },
+                                            "& label.Mui-focused": {
+                                                color: "var(--navy-600)",
                                             }
                                         }}
                                     />
@@ -346,7 +384,6 @@ function SubmitFact() {
 
                                 <Button
                                     variant="contained"
-                                    color="primary"
                                     type="submit"
                                     size="large"
                                     disabled={loading || !texte.trim()}
@@ -354,15 +391,20 @@ function SubmitFact() {
                                     sx={{
                                         py: 1.5,
                                         px: 4,
+                                        minHeight: 48,
                                         fontSize: "1.1rem",
                                         fontWeight: 600,
-                                        borderRadius: 2,
-                                        background: "linear-gradient(45deg, #2563eb, #3b82f6)",
+                                        borderRadius: "var(--radius-md)",
+                                        boxShadow: "var(--shadow-sm)",
+                                        bgcolor: "var(--green-500)",
+                                        color: "#fff",
                                         "&:hover": {
-                                            background: "linear-gradient(45deg, #1d4ed8, #2563eb)",
+                                            bgcolor: "var(--green-600)",
+                                            boxShadow: "var(--shadow-md)",
                                         },
                                         "&:disabled": {
-                                            background: "#94a3b8",
+                                            bgcolor: "var(--slate-300)",
+                                            color: "#fff",
                                         }
                                     }}
                                 >
@@ -374,31 +416,35 @@ function SubmitFact() {
                         {/* Loading State */}
                         {loading && (
                             <Fade in={loading}>
-                                <Paper 
-                                    elevation={0} 
-                                    sx={{ 
-                                        p: 4, 
-                                        borderRadius: 3, 
-                                        border: "1px solid #e2e8f0",
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        p: 4,
+                                        borderRadius: "var(--radius-lg)",
+                                        border: "1px solid var(--slate-200)",
+                                        boxShadow: "var(--shadow-sm)",
+                                        bgcolor: "#fff",
                                         textAlign: "center",
                                         mb: 4
                                     }}
                                 >
-                                    <HourglassEmpty sx={{ fontSize: 48, color: "#f59e0b", mb: 2 }} />
-                                    <Typography variant="h6" sx={{ fontWeight: 600, color: "#0f172a", mb: 2 }}>
+                                    <HourglassEmpty sx={{ fontSize: 48, color: "var(--amber-500)", mb: 2 }} />
+                                    <Typography variant="h6" sx={{ fontFamily: "var(--font-display)", fontWeight: 600, color: "var(--navy-900)", mb: 2 }}>
                                         Analyse en cours...
                                     </Typography>
-                                    <Typography variant="body1" sx={{ color: "#64748b", mb: 3 }}>
+                                    <Typography variant="body1" sx={{ color: "var(--slate-500)", mb: 3 }}>
                                         Notre IA recherche et analyse les sources disponibles
                                     </Typography>
-                                    <LinearProgress 
-                                        sx={{ 
-                                            borderRadius: 1,
+                                    <LinearProgress
+                                        sx={{
+                                            borderRadius: "var(--radius-pill)",
                                             height: 8,
+                                            bgcolor: "var(--navy-50)",
                                             "& .MuiLinearProgress-bar": {
-                                                borderRadius: 1,
+                                                borderRadius: "var(--radius-pill)",
+                                                bgcolor: "var(--navy-600)",
                                             }
-                                        }} 
+                                        }}
                                     />
                                 </Paper>
                             </Fade>
@@ -407,12 +453,13 @@ function SubmitFact() {
                         {/* Results */}
                         {status && !loading && (
                             <Fade in={!loading}>
-                                <Paper 
-                                    elevation={0} 
-                                    sx={{ 
-                                        p: 6, 
-                                        borderRadius: 3, 
-                                        border: `2px solid ${getStatusConfig().color}`,
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        p: 6,
+                                        borderRadius: "var(--radius-lg)",
+                                        border: `1px solid ${getStatusConfig().border}`,
+                                        boxShadow: "var(--shadow-sm)",
                                         bgcolor: getStatusConfig().bgcolor,
                                         mb: 4
                                     }}
@@ -421,30 +468,31 @@ function SubmitFact() {
                                         {getStatusConfig().icon}
                                         <Typography
                                             variant="h4"
-                                            sx={{ 
-                                                fontWeight: 700, 
-                                                color: getStatusConfig().color, 
-                                                mt: 2, 
-                                                mb: 1 
+                                            sx={{
+                                                fontFamily: "var(--font-display)",
+                                                fontWeight: 700,
+                                                color: getStatusConfig().color,
+                                                mt: 2,
+                                                mb: 2
                                             }}
                                         >
                                             {getStatusConfig().title}
                                         </Typography>
-                                        <Chip
-                                            label={getStatusConfig().chip}
-                                            sx={{
-                                                bgcolor: getStatusConfig().color,
-                                                color: "white",
-                                                fontWeight: 600,
-                                                px: 2
-                                            }}
-                                        />
+                                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                                            <VerdictBadge
+                                                verdict={getStatusConfig().verdict}
+                                                variant="solid"
+                                                size="md"
+                                                label={getStatusConfig().chip}
+                                            />
+                                        </Box>
                                     </Box>
-                                    
-                                    <Alert 
-                                        severity={status === "vérifié" ? "success" : status === "rejeté" ? "error" : "warning"}
-                                        sx={{ 
+
+                                    <Alert
+                                        severity={getStatusConfig().severity}
+                                        sx={{
                                             fontSize: "1.1rem",
+                                            borderRadius: "var(--radius-md)",
                                             "& .MuiAlert-message": {
                                                 width: "100%"
                                             }
@@ -461,88 +509,47 @@ function SubmitFact() {
                         {/* Sources Section */}
                         {status && !loading && webSources.length > 0 && (
                             <Fade in={!loading}>
-                                <Paper 
-                                    elevation={0} 
-                                    sx={{ 
-                                        p: 6, 
-                                        borderRadius: 3, 
-                                        border: "1px solid #e2e8f0" 
+                                <Paper
+                                    elevation={0}
+                                    sx={{
+                                        p: 6,
+                                        borderRadius: "var(--radius-lg)",
+                                        border: "1px solid var(--slate-200)",
+                                        boxShadow: "var(--shadow-sm)",
+                                        bgcolor: "#fff",
                                     }}
                                 >
                                     <Typography
                                         variant="h5"
-                                        sx={{ 
-                                            fontWeight: 700, 
-                                            color: "#0f172a", 
+                                        sx={{
+                                            fontFamily: "var(--font-display)",
+                                            fontWeight: 700,
+                                            color: "var(--navy-900)",
                                             mb: 1,
                                             display: "flex",
                                             alignItems: "center",
                                             gap: 1
                                         }}
                                     >
-                                        <Search sx={{ color: "#2563eb" }} />
+                                        <Search sx={{ color: "var(--navy-600)" }} />
                                         Sources Analysées
                                     </Typography>
                                     <Typography
                                         variant="body1"
-                                        sx={{ color: "#64748b", mb: 4 }}
+                                        sx={{ color: "var(--slate-500)", mb: 4 }}
                                     >
                                         Notre IA s'est basée sur les sources suivantes pour sa vérification :
                                     </Typography>
-                                    
+
                                     <Grid container spacing={3}>
                                         {webSources.map((source, index) => (
                                             <Grid item xs={12} key={index}>
-                                                <Card
-                                                    elevation={0}
-                                                    sx={{ 
-                                                        border: "1px solid #e2e8f0",
-                                                        borderRadius: 2,
-                                                        transition: "all 0.2s ease",
-                                                        "&:hover": {
-                                                            borderColor: "#2563eb",
-                                                            transform: "translateY(-2px)",
-                                                            boxShadow: "0 4px 12px rgba(37, 99, 235, 0.1)"
-                                                        }
-                                                    }}
-                                                >
-                                                    <CardContent sx={{ p: 3 }}>
-                                                        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
-                                                            <OpenInNew sx={{ color: "#2563eb", mt: 0.5 }} />
-                                                            <Box sx={{ flex: 1 }}>
-                                                                <Link
-                                                                    href={source.link}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    sx={{
-                                                                        textDecoration: "none",
-                                                                        color: "#2563eb",
-                                                                        fontWeight: 600,
-                                                                        fontSize: "1.1rem",
-                                                                        "&:hover": {
-                                                                            textDecoration: "underline"
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    {source.title}
-                                                                </Link>
-                                                                {source.date && (
-                                                                    <Typography
-                                                                        variant="caption"
-                                                                        sx={{
-                                                                            display: "block",
-                                                                            color: "#64748b",
-                                                                            mt: 1,
-                                                                            fontSize: "0.9rem"
-                                                                        }}
-                                                                    >
-                                                                        Publié le : {source.date}
-                                                                    </Typography>
-                                                                )}
-                                                            </Box>
-                                                        </Box>
-                                                    </CardContent>
-                                                </Card>
+                                                <SourceCard
+                                                    name={source.title}
+                                                    url={source.link}
+                                                    date={source.date}
+                                                    rank={index + 1}
+                                                />
                                             </Grid>
                                         ))}
                                     </Grid>

@@ -10,8 +10,7 @@ import {
     Card,
     IconButton,
     InputAdornment,
-    Divider,
-    Avatar
+    Divider
 } from "@mui/material";
 import {
     LoginRounded,
@@ -19,10 +18,10 @@ import {
     EmailRounded,
     LockRounded,
     VisibilityRounded,
-    VisibilityOffRounded,
-    VerifiedUser
+    VisibilityOffRounded
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
+import Logo from "./brand/Logo";
 
 function Login() {
     const [email, setEmail] = useState("");
@@ -62,7 +61,7 @@ function Login() {
         <Box
             sx={{
                 minHeight: '100vh',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                bgcolor: 'var(--slate-50)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -75,38 +74,32 @@ function Login() {
                     maxWidth: 440,
                     width: '100%',
                     p: { xs: 3, sm: 4 },
-                    borderRadius: 4,
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                    borderRadius: 'var(--radius-lg)',
+                    bgcolor: 'var(--slate-0)',
+                    border: '1px solid var(--slate-200)',
+                    boxShadow: 'var(--shadow-sm)'
                 }}
             >
                 {/* Header */}
                 <Box sx={{ textAlign: 'center', mb: 4 }}>
-                    <Avatar 
-                        sx={{ 
-                            bgcolor: '#2563eb', 
-                            width: 64, 
-                            height: 64, 
-                            mx: 'auto', 
-                            mb: 2 
-                        }}
-                    >
-                        <VerifiedUser sx={{ fontSize: 32 }} />
-                    </Avatar>
-                    <Typography 
-                        variant="h4" 
-                        sx={{ 
-                            fontWeight: 700, 
-                            color: '#0f172a',
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2.5 }}>
+                        <Logo height={40} />
+                    </Box>
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            fontFamily: 'var(--font-display)',
+                            fontWeight: 700,
+                            color: 'var(--navy-900)',
                             mb: 1
                         }}
                     >
                         Bienvenue
                     </Typography>
-                    <Typography 
-                        variant="body1" 
-                        sx={{ 
-                            color: '#64748b',
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            color: 'var(--slate-500)',
                             fontSize: '1.1rem'
                         }}
                     >
@@ -116,16 +109,16 @@ function Login() {
 
                 {/* Error Alert */}
                 {error && (
-                    <Alert 
-                        severity="error" 
-                        sx={{ 
+                    <Alert
+                        severity="error"
+                        sx={{
                             mb: 3,
-                            borderRadius: 2,
+                            borderRadius: 'var(--radius-md)',
                             bgcolor: '#fef2f2',
-                            color: '#dc2626',
+                            color: 'var(--red-600)',
                             border: '1px solid #fecaca',
                             '& .MuiAlert-icon': {
-                                color: '#dc2626'
+                                color: 'var(--red-600)'
                             }
                         }}
                     >
@@ -136,12 +129,12 @@ function Login() {
                 {/* Login Form */}
                 <form onSubmit={handleSubmit}>
                     <Box sx={{ mb: 3 }}>
-                        <Typography 
-                            variant="body2" 
-                            sx={{ 
-                                fontWeight: 600, 
-                                color: '#374151', 
-                                mb: 1 
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontWeight: 600,
+                                color: 'var(--slate-700)',
+                                mb: 1
                             }}
                         >
                             Adresse e-mail
@@ -157,22 +150,22 @@ function Login() {
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
-                                        <EmailRounded sx={{ color: '#9ca3af' }} />
+                                        <EmailRounded sx={{ color: 'var(--slate-400)' }} />
                                     </InputAdornment>
                                 ),
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    bgcolor: '#f8fafc',
+                                    borderRadius: 'var(--radius-md)',
+                                    bgcolor: 'var(--slate-50)',
                                     '& fieldset': {
-                                        borderColor: '#e2e8f0'
+                                        borderColor: 'var(--slate-200)'
                                     },
                                     '&:hover fieldset': {
-                                        borderColor: '#cbd5e1'
+                                        borderColor: 'var(--slate-300)'
                                     },
                                     '&.Mui-focused fieldset': {
-                                        borderColor: '#2563eb',
+                                        borderColor: 'var(--navy-600)',
                                         borderWidth: 2
                                     }
                                 }
@@ -181,12 +174,12 @@ function Login() {
                     </Box>
 
                     <Box sx={{ mb: 4 }}>
-                        <Typography 
-                            variant="body2" 
-                            sx={{ 
-                                fontWeight: 600, 
-                                color: '#374151', 
-                                mb: 1 
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontWeight: 600,
+                                color: 'var(--slate-700)',
+                                mb: 1
                             }}
                         >
                             Mot de passe
@@ -202,7 +195,7 @@ function Login() {
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
-                                        <LockRounded sx={{ color: '#9ca3af' }} />
+                                        <LockRounded sx={{ color: 'var(--slate-400)' }} />
                                     </InputAdornment>
                                 ),
                                 endAdornment: (
@@ -211,7 +204,7 @@ function Login() {
                                             onClick={togglePasswordVisibility}
                                             edge="end"
                                             disabled={loading}
-                                            sx={{ color: '#9ca3af' }}
+                                            sx={{ color: 'var(--slate-400)' }}
                                         >
                                             {showPassword ? <VisibilityOffRounded /> : <VisibilityRounded />}
                                         </IconButton>
@@ -220,16 +213,16 @@ function Login() {
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    bgcolor: '#f8fafc',
+                                    borderRadius: 'var(--radius-md)',
+                                    bgcolor: 'var(--slate-50)',
                                     '& fieldset': {
-                                        borderColor: '#e2e8f0'
+                                        borderColor: 'var(--slate-200)'
                                     },
                                     '&:hover fieldset': {
-                                        borderColor: '#cbd5e1'
+                                        borderColor: 'var(--slate-300)'
                                     },
                                     '&.Mui-focused fieldset': {
-                                        borderColor: '#2563eb',
+                                        borderColor: 'var(--navy-600)',
                                         borderWidth: 2
                                     }
                                 }
@@ -244,22 +237,23 @@ function Login() {
                         disabled={loading}
                         startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <LoginRounded />}
                         sx={{
-                            bgcolor: '#2563eb',
+                            bgcolor: 'var(--green-500)',
                             color: 'white',
                             fontWeight: 600,
                             py: 1.5,
-                            borderRadius: 2,
+                            minHeight: 48,
+                            borderRadius: 'var(--radius-md)',
                             textTransform: 'none',
                             fontSize: '1rem',
                             boxShadow: 'none',
                             mb: 3,
                             '&:hover': {
-                                bgcolor: '#1d4ed8',
-                                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+                                bgcolor: 'var(--green-600)',
+                                boxShadow: 'var(--shadow-md)'
                             },
                             '&:disabled': {
-                                bgcolor: '#cbd5e1',
-                                color: '#6b7280'
+                                bgcolor: 'var(--slate-300)',
+                                color: 'var(--slate-500)'
                             }
                         }}
                     >
@@ -268,8 +262,8 @@ function Login() {
                 </form>
 
                 {/* Divider */}
-                <Divider sx={{ my: 3 }}>
-                    <Typography variant="body2" sx={{ color: '#9ca3af', px: 2 }}>
+                <Divider sx={{ my: 3, borderColor: 'var(--slate-200)' }}>
+                    <Typography variant="body2" sx={{ color: 'var(--slate-500)', px: 2 }}>
                         Pas encore de compte ?
                     </Typography>
                 </Divider>
@@ -283,17 +277,18 @@ function Login() {
                     startIcon={<PersonAddRounded />}
                     disabled={loading}
                     sx={{
-                        borderColor: '#e2e8f0',
-                        color: '#475569',
+                        borderColor: 'var(--navy-600)',
+                        color: 'var(--navy-600)',
                         fontWeight: 600,
                         py: 1.5,
-                        borderRadius: 2,
+                        minHeight: 48,
+                        borderRadius: 'var(--radius-md)',
                         textTransform: 'none',
                         fontSize: '1rem',
                         '&:hover': {
-                            borderColor: '#2563eb',
-                            color: '#2563eb',
-                            bgcolor: '#f0f7ff'
+                            borderColor: 'var(--navy-700)',
+                            color: 'var(--navy-700)',
+                            bgcolor: 'var(--navy-50)'
                         }
                     }}
                 >
@@ -302,12 +297,12 @@ function Login() {
 
                 {/* Footer */}
                 <Box sx={{ textAlign: 'center', mt: 4 }}>
-                    <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+                    <Typography variant="body2" sx={{ color: 'var(--slate-500)' }}>
                         En vous connectant, vous acceptez nos{' '}
-                        <Link 
-                            to="/terms" 
-                            style={{ 
-                                color: '#2563eb', 
+                        <Link
+                            to="/terms"
+                            style={{
+                                color: 'var(--navy-600)',
                                 textDecoration: 'none',
                                 fontWeight: 500
                             }}
@@ -315,12 +310,12 @@ function Login() {
                             conditions d'utilisation
                         </Link>
                         {' '}et notre{' '}
-                        <Link 
-                            to="/privacy" 
-                            style={{ 
-                                color: '#2563eb', 
+                        <Link
+                            to="/privacy"
+                            style={{
+                                color: 'var(--navy-600)',
                                 textDecoration: 'none',
-                                fontWeight: 500 
+                                fontWeight: 500
                             }}
                         >
                             politique de confidentialité

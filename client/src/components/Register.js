@@ -11,7 +11,6 @@ import {
     IconButton,
     InputAdornment,
     Divider,
-    Avatar,
     Grid
 } from "@mui/material";
 import {
@@ -21,10 +20,10 @@ import {
     LockRounded,
     VisibilityRounded,
     VisibilityOffRounded,
-    PersonRounded,
-    VerifiedUser
+    PersonRounded
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
+import Logo from "./brand/Logo";
 
 function Register() {
     const [email, setEmail] = useState("");
@@ -103,7 +102,7 @@ function Register() {
         <Box
             sx={{
                 minHeight: '100vh',
-                background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+                bgcolor: 'var(--slate-50)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -117,38 +116,32 @@ function Register() {
                     maxWidth: 500,
                     width: '100%',
                     p: { xs: 3, sm: 4 },
-                    borderRadius: 4,
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--slate-200)',
+                    bgcolor: 'var(--slate-0)',
+                    boxShadow: 'var(--shadow-sm)'
                 }}
             >
                 {/* Header */}
                 <Box sx={{ textAlign: 'center', mb: 4 }}>
-                    <Avatar 
-                        sx={{ 
-                            bgcolor: '#2563eb', 
-                            width: 64, 
-                            height: 64, 
-                            mx: 'auto', 
-                            mb: 2 
-                        }}
-                    >
-                        <VerifiedUser sx={{ fontSize: 32 }} />
-                    </Avatar>
-                    <Typography 
-                        variant="h4" 
-                        sx={{ 
-                            fontWeight: 700, 
-                            color: '#0f172a',
+                    <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2.5 }}>
+                        <Logo height={44} />
+                    </Box>
+                    <Typography
+                        variant="h4"
+                        sx={{
+                            fontWeight: 700,
+                            fontFamily: 'var(--font-display)',
+                            color: 'var(--navy-900)',
                             mb: 1
                         }}
                     >
                         Créer un compte
                     </Typography>
-                    <Typography 
-                        variant="body1" 
-                        sx={{ 
-                            color: '#64748b',
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            color: 'var(--slate-500)',
                             fontSize: '1.1rem'
                         }}
                     >
@@ -158,16 +151,16 @@ function Register() {
 
                 {/* Error Alert */}
                 {error && (
-                    <Alert 
-                        severity="error" 
-                        sx={{ 
+                    <Alert
+                        severity="error"
+                        sx={{
                             mb: 3,
-                            borderRadius: 2,
+                            borderRadius: 'var(--radius-md)',
                             bgcolor: '#fef2f2',
-                            color: '#dc2626',
+                            color: 'var(--red-600)',
                             border: '1px solid #fecaca',
                             '& .MuiAlert-icon': {
-                                color: '#dc2626'
+                                color: 'var(--red-600)'
                             }
                         }}
                     >
@@ -177,16 +170,16 @@ function Register() {
 
                 {/* Success Alert */}
                 {success && (
-                    <Alert 
-                        severity="success" 
-                        sx={{ 
+                    <Alert
+                        severity="success"
+                        sx={{
                             mb: 3,
-                            borderRadius: 2,
-                            bgcolor: '#f0fdf4',
-                            color: '#16a34a',
-                            border: '1px solid #bbf7d0',
+                            borderRadius: 'var(--radius-md)',
+                            bgcolor: 'var(--green-50)',
+                            color: 'var(--green-600)',
+                            border: '1px solid var(--green-200)',
                             '& .MuiAlert-icon': {
-                                color: '#16a34a'
+                                color: 'var(--green-600)'
                             }
                         }}
                     >
@@ -199,12 +192,12 @@ function Register() {
                     {/* Name Fields */}
                     <Grid container spacing={2} sx={{ mb: 3 }}>
                         <Grid item xs={12} sm={6}>
-                            <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                    fontWeight: 600, 
-                                    color: '#374151', 
-                                    mb: 1 
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: 'var(--slate-700)',
+                                    mb: 1
                                 }}
                             >
                                 Prénom
@@ -219,22 +212,22 @@ function Register() {
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <PersonRounded sx={{ color: '#9ca3af' }} />
+                                            <PersonRounded sx={{ color: 'var(--slate-400)' }} />
                                         </InputAdornment>
                                     ),
                                 }}
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
-                                        borderRadius: 2,
-                                        bgcolor: '#f8fafc',
+                                        borderRadius: 'var(--radius-md)',
+                                        bgcolor: 'var(--slate-50)',
                                         '& fieldset': {
-                                            borderColor: '#e2e8f0'
+                                            borderColor: 'var(--slate-200)'
                                         },
                                         '&:hover fieldset': {
-                                            borderColor: '#cbd5e1'
+                                            borderColor: 'var(--slate-300)'
                                         },
                                         '&.Mui-focused fieldset': {
-                                            borderColor: '#2563eb',
+                                            borderColor: 'var(--navy-600)',
                                             borderWidth: 2
                                         }
                                     }
@@ -242,12 +235,12 @@ function Register() {
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                    fontWeight: 600, 
-                                    color: '#374151', 
-                                    mb: 1 
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: 'var(--slate-700)',
+                                    mb: 1
                                 }}
                             >
                                 Nom
@@ -262,22 +255,22 @@ function Register() {
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <PersonRounded sx={{ color: '#9ca3af' }} />
+                                            <PersonRounded sx={{ color: 'var(--slate-400)' }} />
                                         </InputAdornment>
                                     ),
                                 }}
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
-                                        borderRadius: 2,
-                                        bgcolor: '#f8fafc',
+                                        borderRadius: 'var(--radius-md)',
+                                        bgcolor: 'var(--slate-50)',
                                         '& fieldset': {
-                                            borderColor: '#e2e8f0'
+                                            borderColor: 'var(--slate-200)'
                                         },
                                         '&:hover fieldset': {
-                                            borderColor: '#cbd5e1'
+                                            borderColor: 'var(--slate-300)'
                                         },
                                         '&.Mui-focused fieldset': {
-                                            borderColor: '#2563eb',
+                                            borderColor: 'var(--navy-600)',
                                             borderWidth: 2
                                         }
                                     }
@@ -288,12 +281,12 @@ function Register() {
 
                     {/* Email Field */}
                     <Box sx={{ mb: 3 }}>
-                        <Typography 
-                            variant="body2" 
-                            sx={{ 
-                                fontWeight: 600, 
-                                color: '#374151', 
-                                mb: 1 
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                fontWeight: 600,
+                                color: 'var(--slate-700)',
+                                mb: 1
                             }}
                         >
                             Adresse e-mail
@@ -309,22 +302,22 @@ function Register() {
                             InputProps={{
                                 startAdornment: (
                                     <InputAdornment position="start">
-                                        <EmailRounded sx={{ color: '#9ca3af' }} />
+                                        <EmailRounded sx={{ color: 'var(--slate-400)' }} />
                                     </InputAdornment>
                                 ),
                             }}
                             sx={{
                                 '& .MuiOutlinedInput-root': {
-                                    borderRadius: 2,
-                                    bgcolor: '#f8fafc',
+                                    borderRadius: 'var(--radius-md)',
+                                    bgcolor: 'var(--slate-50)',
                                     '& fieldset': {
-                                        borderColor: '#e2e8f0'
+                                        borderColor: 'var(--slate-200)'
                                     },
                                     '&:hover fieldset': {
-                                        borderColor: '#cbd5e1'
+                                        borderColor: 'var(--slate-300)'
                                     },
                                     '&.Mui-focused fieldset': {
-                                        borderColor: '#2563eb',
+                                        borderColor: 'var(--navy-600)',
                                         borderWidth: 2
                                     }
                                 }
@@ -335,12 +328,12 @@ function Register() {
                     {/* Password Fields */}
                     <Grid container spacing={2} sx={{ mb: 4 }}>
                         <Grid item xs={12} sm={6}>
-                            <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                    fontWeight: 600, 
-                                    color: '#374151', 
-                                    mb: 1 
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: 'var(--slate-700)',
+                                    mb: 1
                                 }}
                             >
                                 Mot de passe
@@ -356,7 +349,7 @@ function Register() {
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <LockRounded sx={{ color: '#9ca3af' }} />
+                                            <LockRounded sx={{ color: 'var(--slate-400)' }} />
                                         </InputAdornment>
                                     ),
                                     endAdornment: (
@@ -365,7 +358,7 @@ function Register() {
                                                 onClick={togglePasswordVisibility}
                                                 edge="end"
                                                 disabled={loading}
-                                                sx={{ color: '#9ca3af' }}
+                                                sx={{ color: 'var(--slate-500)' }}
                                             >
                                                 {showPassword ? <VisibilityOffRounded /> : <VisibilityRounded />}
                                             </IconButton>
@@ -374,16 +367,16 @@ function Register() {
                                 }}
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
-                                        borderRadius: 2,
-                                        bgcolor: '#f8fafc',
+                                        borderRadius: 'var(--radius-md)',
+                                        bgcolor: 'var(--slate-50)',
                                         '& fieldset': {
-                                            borderColor: '#e2e8f0'
+                                            borderColor: 'var(--slate-200)'
                                         },
                                         '&:hover fieldset': {
-                                            borderColor: '#cbd5e1'
+                                            borderColor: 'var(--slate-300)'
                                         },
                                         '&.Mui-focused fieldset': {
-                                            borderColor: '#2563eb',
+                                            borderColor: 'var(--navy-600)',
                                             borderWidth: 2
                                         }
                                     }
@@ -391,12 +384,12 @@ function Register() {
                             />
                         </Grid>
                         <Grid item xs={12} sm={6}>
-                            <Typography 
-                                variant="body2" 
-                                sx={{ 
-                                    fontWeight: 600, 
-                                    color: '#374151', 
-                                    mb: 1 
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    fontWeight: 600,
+                                    color: 'var(--slate-700)',
+                                    mb: 1
                                 }}
                             >
                                 Confirmer le mot de passe
@@ -412,7 +405,7 @@ function Register() {
                                 InputProps={{
                                     startAdornment: (
                                         <InputAdornment position="start">
-                                            <LockRounded sx={{ color: '#9ca3af' }} />
+                                            <LockRounded sx={{ color: 'var(--slate-400)' }} />
                                         </InputAdornment>
                                     ),
                                     endAdornment: (
@@ -421,7 +414,7 @@ function Register() {
                                                 onClick={toggleConfirmPasswordVisibility}
                                                 edge="end"
                                                 disabled={loading}
-                                                sx={{ color: '#9ca3af' }}
+                                                sx={{ color: 'var(--slate-500)' }}
                                             >
                                                 {showConfirmPassword ? <VisibilityOffRounded /> : <VisibilityRounded />}
                                             </IconButton>
@@ -430,16 +423,16 @@ function Register() {
                                 }}
                                 sx={{
                                     '& .MuiOutlinedInput-root': {
-                                        borderRadius: 2,
-                                        bgcolor: '#f8fafc',
+                                        borderRadius: 'var(--radius-md)',
+                                        bgcolor: 'var(--slate-50)',
                                         '& fieldset': {
-                                            borderColor: '#e2e8f0'
+                                            borderColor: 'var(--slate-200)'
                                         },
                                         '&:hover fieldset': {
-                                            borderColor: '#cbd5e1'
+                                            borderColor: 'var(--slate-300)'
                                         },
                                         '&.Mui-focused fieldset': {
-                                            borderColor: '#2563eb',
+                                            borderColor: 'var(--navy-600)',
                                             borderWidth: 2
                                         }
                                     }
@@ -455,22 +448,23 @@ function Register() {
                         disabled={loading}
                         startIcon={loading ? <CircularProgress size={20} color="inherit" /> : <PersonAddRounded />}
                         sx={{
-                            bgcolor: '#2563eb',
+                            bgcolor: 'var(--navy-600)',
                             color: 'white',
                             fontWeight: 600,
                             py: 1.5,
-                            borderRadius: 2,
+                            minHeight: 48,
+                            borderRadius: 'var(--radius-md)',
                             textTransform: 'none',
                             fontSize: '1rem',
                             boxShadow: 'none',
                             mb: 3,
                             '&:hover': {
-                                bgcolor: '#1d4ed8',
-                                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+                                bgcolor: 'var(--navy-700)',
+                                boxShadow: '0 4px 12px rgba(40, 52, 138, 0.3)'
                             },
                             '&:disabled': {
-                                bgcolor: '#cbd5e1',
-                                color: '#6b7280'
+                                bgcolor: 'var(--slate-300)',
+                                color: 'var(--slate-500)'
                             }
                         }}
                     >
@@ -479,8 +473,8 @@ function Register() {
                 </form>
 
                 {/* Divider */}
-                <Divider sx={{ my: 3 }}>
-                    <Typography variant="body2" sx={{ color: '#9ca3af', px: 2 }}>
+                <Divider sx={{ my: 3, borderColor: 'var(--slate-200)' }}>
+                    <Typography variant="body2" sx={{ color: 'var(--slate-500)', px: 2 }}>
                         Déjà un compte ?
                     </Typography>
                 </Divider>
@@ -494,17 +488,18 @@ function Register() {
                     startIcon={<LoginRounded />}
                     disabled={loading}
                     sx={{
-                        borderColor: '#e2e8f0',
-                        color: '#475569',
+                        borderColor: 'var(--slate-200)',
+                        color: 'var(--slate-700)',
                         fontWeight: 600,
                         py: 1.5,
-                        borderRadius: 2,
+                        minHeight: 48,
+                        borderRadius: 'var(--radius-md)',
                         textTransform: 'none',
                         fontSize: '1rem',
                         '&:hover': {
-                            borderColor: '#2563eb',
-                            color: '#2563eb',
-                            bgcolor: '#f0f7ff'
+                            borderColor: 'var(--navy-600)',
+                            color: 'var(--navy-600)',
+                            bgcolor: 'var(--navy-50)'
                         }
                     }}
                 >
@@ -513,12 +508,12 @@ function Register() {
 
                 {/* Footer */}
                 <Box sx={{ textAlign: 'center', mt: 4 }}>
-                    <Typography variant="body2" sx={{ color: '#9ca3af' }}>
+                    <Typography variant="body2" sx={{ color: 'var(--slate-500)' }}>
                         En créant un compte, vous acceptez nos{' '}
-                        <Link 
-                            to="/terms" 
-                            style={{ 
-                                color: '#2563eb', 
+                        <Link
+                            to="/terms"
+                            style={{
+                                color: 'var(--navy-600)',
                                 textDecoration: 'none',
                                 fontWeight: 500
                             }}
@@ -526,12 +521,12 @@ function Register() {
                             conditions d'utilisation
                         </Link>
                         {' '}et notre{' '}
-                        <Link 
-                            to="/privacy" 
-                            style={{ 
-                                color: '#2563eb', 
+                        <Link
+                            to="/privacy"
+                            style={{
+                                color: 'var(--navy-600)',
                                 textDecoration: 'none',
-                                fontWeight: 500 
+                                fontWeight: 500
                             }}
                         >
                             politique de confidentialité

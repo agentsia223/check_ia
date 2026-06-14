@@ -9,8 +9,6 @@ import {
     CircularProgress,
     Card,
     CardContent,
-    Chip,
-    LinearProgress,
     Grid,
 } from "@mui/material";
 import {
@@ -24,6 +22,9 @@ import {
 import { styled } from "@mui/material/styles";
 import { supabase } from "../lib/supabase";
 import { API_BASE_URL } from "../config";
+import Logo from "./brand/Logo";
+import VerdictBadge from "./brand/VerdictBadge";
+import ConfidenceMeter from "./brand/ConfidenceMeter";
 
 const VisuallyHiddenInput = styled("input")({
     clip: "rect(0 0 0 0)",
@@ -41,8 +42,9 @@ const ImagePreview = styled("img")({
     maxWidth: "100%",
     maxHeight: "300px",
     objectFit: "contain",
-    borderRadius: "8px",
-    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+    borderRadius: "var(--radius-lg)",
+    border: "1px solid var(--slate-200)",
+    boxShadow: "var(--shadow-sm)",
 });
 
 function AIImageDetection() {
@@ -217,7 +219,7 @@ function AIImageDetection() {
 
                     if (data.state === 'SUCCESS' && data.result) {
                         const resultData = data.result;
-                        
+
                         // Check if this is the upload task completion
                         if (resultData.success && resultData.task_id && !resultData.status) {
                             // This is the upload task - switch to polling the detection task
@@ -225,7 +227,7 @@ function AIImageDetection() {
                             setTaskId(resultData.task_id); // This will trigger new polling for detection task
                             return;
                         }
-                        
+
                         // This is the detection task completion
                         if (resultData.success && resultData.status) {
                             clearInterval(interval);
@@ -266,7 +268,23 @@ function AIImageDetection() {
         };
     }, [taskId]);
 
-    const getStatusColor = (status) => {
+    // Map detection status -> brand verdict key for VerdictBadge / ConfidenceMeter.
+    // AUTHENTIQUE = green/true, IA_DÉTECTÉE = red alarm/false, INCERTAIN = amber/misleading.
+    const getVerdictKey = (status) => {
+        switch (status) {
+            case "AUTHENTIQUE":
+                return "true";
+            case "IA_DÉTECTÉE":
+                return "false";
+            case "INCERTAIN":
+                return "misleading";
+            default:
+                return "unverified";
+        }
+    };
+
+    // Alert severity for the status callout (warning/caution stays amber).
+    const getStatusSeverity = (status) => {
         switch (status) {
             case "AUTHENTIQUE":
                 return "success";
@@ -275,7 +293,7 @@ function AIImageDetection() {
             case "INCERTAIN":
                 return "warning";
             default:
-                return "default";
+                return "info";
         }
     };
 
@@ -320,16 +338,64 @@ function AIImageDetection() {
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Paper elevation={3} sx={{ p: 4 }}>
-                <Box sx={{ textAlign: "center", mb: 4 }}>
-                    <Psychology
-                        sx={{ fontSize: 60, color: "primary.main", mb: 2 }}
-                    />
-                    <Typography variant="h4" component="h1" gutterBottom>
+            <Paper
+                elevation={0}
+                sx={{
+                    overflow: "hidden",
+                    borderRadius: "var(--radius-lg)",
+                    border: "1px solid var(--slate-200)",
+                    boxShadow: "var(--shadow-sm)",
+                    bgcolor: "var(--surface-card)",
+                }}
+            >
+                {/* Navy hero band with reversed brand logo */}
+                <Box
+                    sx={{
+                        background: "var(--navy-600)",
+                        color: "var(--text-on-brand)",
+                        px: { xs: 3, md: 5 },
+                        py: { xs: 4, md: 5 },
+                        textAlign: "center",
+                    }}
+                >
+                    <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
+                        <Logo white height={40} />
+                    </Box>
+                    <Box
+                        sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            width: 64,
+                            height: 64,
+                            borderRadius: "var(--radius-full)",
+                            bgcolor: "rgba(255,255,255,0.12)",
+                            mb: 2,
+                        }}
+                    >
+                        <Psychology sx={{ fontSize: 38, color: "#fff" }} />
+                    </Box>
+                    <Typography
+                        variant="h4"
+                        component="h1"
+                        gutterBottom
+                        sx={{
+                            fontFamily: "var(--font-display)",
+                            fontWeight: 700,
+                            color: "#fff",
+                        }}
+                    >
                         Détection d'Images IA
                     </Typography>
 
-                    <Typography variant="body1" color="text.secondary">
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            color: "rgba(255,255,255,0.85)",
+                            maxWidth: 680,
+                            mx: "auto",
+                        }}
+                    >
                         Téléchargez une image pour détecter si elle a été
                         générée par intelligence artificielle ou si c'est un
                         deepfake. Notre système analyse les artefacts typiques
@@ -337,232 +403,347 @@ function AIImageDetection() {
                     </Typography>
                 </Box>
 
-                {/* Info Cards */}
-                <Grid container spacing={3} sx={{ mb: 4 }}>
-                    <Grid item xs={12} md={4}>
-                        <Card variant="outlined">
-                            <CardContent sx={{ textAlign: "center" }}>
-                                <Security
-                                    color="primary"
-                                    sx={{ fontSize: 40, mb: 1 }}
-                                />
-                                <Typography variant="h6" gutterBottom>
-                                    Détection Avancée
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                >
-                                    Analyse des visages, textures, et artefacts
-                                    de génération IA
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Card variant="outlined">
-                            <CardContent sx={{ textAlign: "center" }}>
-                                <SmartToy
-                                    color="primary"
-                                    sx={{ fontSize: 40, mb: 1 }}
-                                />
-                                <Typography variant="h6" gutterBottom>
-                                    IA Spécialisée
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                >
-                                    Utilise des modèles d'IA avancés pour
-                                    l'analyse d'images
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                    <Grid item xs={12} md={4}>
-                        <Card variant="outlined">
-                            <CardContent sx={{ textAlign: "center" }}>
-                                <CheckCircle
-                                    color="primary"
-                                    sx={{ fontSize: 40, mb: 1 }}
-                                />
-                                <Typography variant="h6" gutterBottom>
-                                    Résultats Fiables
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                >
-                                    Analyse détaillée avec niveau de confiance
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    </Grid>
-                </Grid>
-
-                <Box component="form" onSubmit={handleSubmit}>
-                    {/* Image Upload */}
-                    <Box sx={{ mb: 3 }}>
-                        <Button
-                            component="label"
-                            variant="outlined"
-                            startIcon={<CloudUpload />}
-                            sx={{ mb: 2 }}
-                            fullWidth
-                            size="large"
-                        >
-                            Sélectionner une image à analyser
-                            <VisuallyHiddenInput
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageSelect}
-                            />
-                        </Button>
-
-                        {imagePreview && (
-                            <Box sx={{ textAlign: "center", mb: 2 }}>
-                                <ImagePreview src={imagePreview} alt="Aperçu" />
-                                <Typography
-                                    variant="caption"
-                                    display="block"
-                                    sx={{ mt: 1 }}
-                                >
-                                    {selectedImage?.name}
-                                </Typography>
-                            </Box>
-                        )}
-                    </Box>
-
-                    {/* Error Alert */}
-                    {error && (
-                        <Alert severity="error" sx={{ mb: 3 }}>
-                            {error}
-                        </Alert>
-                    )}
-
-                    {/* Submit Button */}
-                    <Button
-                        type="submit"
-                        variant="contained"
-                        size="large"
-                        fullWidth
-                        disabled={loading || !selectedImage}
-                        sx={{ mb: 3 }}
-                    >
-                        {loading ? (
-                            <>
-                                <CircularProgress size={20} sx={{ mr: 1 }} />
-                                Détection en cours...
-                            </>
-                        ) : (
-                            "Détecter l'IA"
-                        )}
-                    </Button>
-
-                    {/* Results */}
-                    {result && (
-                        <Card elevation={2} sx={{ mt: 3 }}>
-                            <CardContent>
-                                <Box
-                                    sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        mb: 2,
-                                    }}
-                                >
-                                    <Chip
-                                        icon={getStatusIcon(result.status)}
-                                        label={getStatusText(result.status)}
-                                        color={getStatusColor(result.status)}
-                                        size="large"
-                                        sx={{ mr: 2 }}
+                <Box sx={{ p: { xs: 3, md: 4 } }}>
+                    {/* Info Cards */}
+                    <Grid container spacing={3} sx={{ mb: 4 }}>
+                        <Grid item xs={12} md={4}>
+                            <Card
+                                variant="outlined"
+                                sx={{
+                                    height: "100%",
+                                    borderRadius: "var(--radius-lg)",
+                                    border: "1px solid var(--slate-200)",
+                                    boxShadow: "var(--shadow-xs)",
+                                }}
+                            >
+                                <CardContent sx={{ textAlign: "center" }}>
+                                    <Security
+                                        sx={{
+                                            fontSize: 40,
+                                            mb: 1,
+                                            color: "var(--navy-600)",
+                                        }}
                                     />
                                     <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                    >
-                                        Confiance: {result.confidence}%
-                                    </Typography>
-                                </Box>
-
-                                <LinearProgress
-                                    variant="determinate"
-                                    value={result.confidence || 0}
-                                    color={getStatusColor(result.status)}
-                                    sx={{ mb: 3, height: 8, borderRadius: 4 }}
-                                />
-
-                                <Alert
-                                    severity={getStatusColor(result.status)}
-                                    sx={{ mb: 3 }}
-                                >
-                                    {getStatusDescription(result.status)}
-                                </Alert>
-
-                                <Typography variant="h6" gutterBottom>
-                                    Analyse détaillée:
-                                </Typography>
-
-                                <Box
-                                    sx={{
-                                        "& h1, & h2, & h3, & h4, & h5, & h6": {
-                                            fontSize: "1.1rem",
-                                            fontWeight: "bold",
-                                            margin: "16px 0 8px 0",
-                                        },
-                                        "& p": {
-                                            margin: "8px 0",
-                                        },
-                                        "& ul, & ol": {
-                                            paddingLeft: "20px",
-                                            margin: "8px 0",
-                                        },
-                                        "& li": {
-                                            margin: "4px 0",
-                                        },
-                                        "& strong": {
-                                            fontWeight: "bold",
-                                        },
-                                        "& em": {
-                                            fontStyle: "italic",
-                                        },
-                                    }}
-                                >
-                                    {formatAnalysisText(result.explanation)}
-                                </Box>
-
-                                {result.details && (
-                                    <Box
+                                        variant="h6"
+                                        gutterBottom
                                         sx={{
-                                            mt: 2,
-                                            p: 2,
-                                            bgcolor: "grey.50",
-                                            borderRadius: 1,
+                                            fontFamily: "var(--font-display)",
+                                            fontWeight: 700,
+                                            color: "var(--navy-900)",
                                         }}
                                     >
-                                        <Typography
-                                            variant="body2"
-                                            color="text.secondary"
-                                        >
-                                            <strong>Type:</strong>{" "}
-                                            {result.details.type_verification}
-                                        </Typography>
-                                    </Box>
-                                )}
+                                        Détection Avancée
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{ color: "var(--slate-500)" }}
+                                    >
+                                        Analyse des visages, textures, et artefacts
+                                        de génération IA
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <Card
+                                variant="outlined"
+                                sx={{
+                                    height: "100%",
+                                    borderRadius: "var(--radius-lg)",
+                                    border: "1px solid var(--slate-200)",
+                                    boxShadow: "var(--shadow-xs)",
+                                }}
+                            >
+                                <CardContent sx={{ textAlign: "center" }}>
+                                    <SmartToy
+                                        sx={{
+                                            fontSize: 40,
+                                            mb: 1,
+                                            color: "var(--navy-600)",
+                                        }}
+                                    />
+                                    <Typography
+                                        variant="h6"
+                                        gutterBottom
+                                        sx={{
+                                            fontFamily: "var(--font-display)",
+                                            fontWeight: 700,
+                                            color: "var(--navy-900)",
+                                        }}
+                                    >
+                                        IA Spécialisée
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{ color: "var(--slate-500)" }}
+                                    >
+                                        Utilise des modèles d'IA avancés pour
+                                        l'analyse d'images
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                        <Grid item xs={12} md={4}>
+                            <Card
+                                variant="outlined"
+                                sx={{
+                                    height: "100%",
+                                    borderRadius: "var(--radius-lg)",
+                                    border: "1px solid var(--slate-200)",
+                                    boxShadow: "var(--shadow-xs)",
+                                }}
+                            >
+                                <CardContent sx={{ textAlign: "center" }}>
+                                    <CheckCircle
+                                        sx={{
+                                            fontSize: 40,
+                                            mb: 1,
+                                            color: "var(--green-500)",
+                                        }}
+                                    />
+                                    <Typography
+                                        variant="h6"
+                                        gutterBottom
+                                        sx={{
+                                            fontFamily: "var(--font-display)",
+                                            fontWeight: 700,
+                                            color: "var(--navy-900)",
+                                        }}
+                                    >
+                                        Résultats Fiables
+                                    </Typography>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{ color: "var(--slate-500)" }}
+                                    >
+                                        Analyse détaillée avec niveau de confiance
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        </Grid>
+                    </Grid>
 
-                                <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                    sx={{ mt: 2, display: "block" }}
-                                >
-                                    Détection effectuée le{" "}
-                                    {new Date(result.date).toLocaleString(
-                                        "fr-FR"
+                    <Box component="form" onSubmit={handleSubmit}>
+                        {/* Image Upload */}
+                        <Box sx={{ mb: 3 }}>
+                            <Button
+                                component="label"
+                                variant="outlined"
+                                startIcon={<CloudUpload />}
+                                fullWidth
+                                size="large"
+                                sx={{
+                                    mb: 2,
+                                    minHeight: 48,
+                                    borderRadius: "var(--radius-md)",
+                                    borderColor: "var(--navy-600)",
+                                    color: "var(--navy-600)",
+                                    fontWeight: 600,
+                                    "&:hover": {
+                                        borderColor: "var(--navy-700)",
+                                        bgcolor: "var(--navy-50)",
+                                    },
+                                }}
+                            >
+                                Sélectionner une image à analyser
+                                <VisuallyHiddenInput
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleImageSelect}
+                                />
+                            </Button>
+
+                            {imagePreview && (
+                                <Box sx={{ textAlign: "center", mb: 2 }}>
+                                    <ImagePreview src={imagePreview} alt="Aperçu" />
+                                    <Typography
+                                        variant="caption"
+                                        display="block"
+                                        sx={{
+                                            mt: 1,
+                                            fontFamily: "var(--font-mono)",
+                                            color: "var(--slate-500)",
+                                        }}
+                                    >
+                                        {selectedImage?.name}
+                                    </Typography>
+                                </Box>
+                            )}
+                        </Box>
+
+                        {/* Error Alert */}
+                        {error && (
+                            <Alert
+                                severity="error"
+                                sx={{ mb: 3, borderRadius: "var(--radius-md)" }}
+                            >
+                                {error}
+                            </Alert>
+                        )}
+
+                        {/* Submit Button */}
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            size="large"
+                            fullWidth
+                            disabled={loading || !selectedImage}
+                            sx={{
+                                mb: 3,
+                                minHeight: 48,
+                                borderRadius: "var(--radius-md)",
+                                fontWeight: 700,
+                                bgcolor: "var(--green-500)",
+                                color: "#fff",
+                                boxShadow: "var(--shadow-sm)",
+                                "&:hover": {
+                                    bgcolor: "var(--green-600)",
+                                    boxShadow: "var(--shadow-md)",
+                                },
+                            }}
+                        >
+                            {loading ? (
+                                <>
+                                    <CircularProgress
+                                        size={20}
+                                        sx={{ mr: 1, color: "#fff" }}
+                                    />
+                                    Détection en cours...
+                                </>
+                            ) : (
+                                "Détecter l'IA"
+                            )}
+                        </Button>
+
+                        {/* Results */}
+                        {result && (
+                            <Card
+                                elevation={0}
+                                sx={{
+                                    mt: 3,
+                                    borderRadius: "var(--radius-lg)",
+                                    border: "1px solid var(--slate-200)",
+                                    boxShadow: "var(--shadow-sm)",
+                                }}
+                            >
+                                <CardContent>
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            flexWrap: "wrap",
+                                            gap: 2,
+                                            mb: 2,
+                                        }}
+                                    >
+                                        <VerdictBadge
+                                            verdict={getVerdictKey(result.status)}
+                                            variant="solid"
+                                            size="lg"
+                                            label={getStatusText(result.status)}
+                                        />
+                                    </Box>
+
+                                    <ConfidenceMeter
+                                        value={result.confidence || 0}
+                                        verdict={getVerdictKey(result.status)}
+                                        label="Confiance"
+                                        style={{ marginBottom: 24 }}
+                                    />
+
+                                    <Alert
+                                        severity={getStatusSeverity(result.status)}
+                                        icon={getStatusIcon(result.status)}
+                                        sx={{
+                                            mb: 3,
+                                            borderRadius: "var(--radius-md)",
+                                        }}
+                                    >
+                                        {getStatusDescription(result.status)}
+                                    </Alert>
+
+                                    <Typography
+                                        variant="h6"
+                                        gutterBottom
+                                        sx={{
+                                            fontFamily: "var(--font-display)",
+                                            fontWeight: 700,
+                                            color: "var(--navy-900)",
+                                        }}
+                                    >
+                                        Analyse détaillée:
+                                    </Typography>
+
+                                    <Box
+                                        sx={{
+                                            color: "var(--slate-800)",
+                                            "& h1, & h2, & h3, & h4, & h5, & h6": {
+                                                fontFamily: "var(--font-display)",
+                                                fontSize: "1.1rem",
+                                                fontWeight: "bold",
+                                                color: "var(--navy-900)",
+                                                margin: "16px 0 8px 0",
+                                            },
+                                            "& p": {
+                                                margin: "8px 0",
+                                            },
+                                            "& ul, & ol": {
+                                                paddingLeft: "20px",
+                                                margin: "8px 0",
+                                            },
+                                            "& li": {
+                                                margin: "4px 0",
+                                            },
+                                            "& strong": {
+                                                fontWeight: "bold",
+                                            },
+                                            "& em": {
+                                                fontStyle: "italic",
+                                            },
+                                        }}
+                                    >
+                                        {formatAnalysisText(result.explanation)}
+                                    </Box>
+
+                                    {result.details && (
+                                        <Box
+                                            sx={{
+                                                mt: 2,
+                                                p: 2,
+                                                bgcolor: "var(--slate-50)",
+                                                border: "1px solid var(--slate-100)",
+                                                borderRadius: "var(--radius-md)",
+                                            }}
+                                        >
+                                            <Typography
+                                                variant="body2"
+                                                sx={{ color: "var(--slate-700)" }}
+                                            >
+                                                <strong>Type:</strong>{" "}
+                                                {result.details.type_verification}
+                                            </Typography>
+                                        </Box>
                                     )}
-                                </Typography>
-                            </CardContent>
-                        </Card>
-                    )}
+
+                                    <Typography
+                                        variant="caption"
+                                        sx={{
+                                            mt: 2,
+                                            display: "block",
+                                            fontFamily: "var(--font-mono)",
+                                            color: "var(--slate-500)",
+                                        }}
+                                    >
+                                        Détection effectuée le{" "}
+                                        {new Date(result.date).toLocaleString(
+                                            "fr-FR"
+                                        )}
+                                    </Typography>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </Box>
                 </Box>
             </Paper>
         </Container>

@@ -18,12 +18,12 @@ import {
     Psychology,
     TrendingUp,
     Security,
-    VerifiedUser,
     Speed,
     ArrowForward,
     CheckCircle,
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
+import Logo from "./brand/Logo";
 
 function Home() {
     const { isLoggedIn } = useContext(AuthContext);
@@ -35,7 +35,7 @@ function Home() {
             description:
                 "Analysez la véracité d'informations textuelles avec notre IA avancée",
             link: "/submit",
-            color: "#2563eb",
+            color: "var(--navy-600)",
             gradient: "from-blue-500 to-blue-600",
         },
         {
@@ -43,7 +43,7 @@ function Home() {
             title: "Analyse d'Images",
             description: "Vérifiez l'authenticité et le contenu des images",
             link: "/verify-image",
-            color: "#f59e0b",
+            color: "var(--green-500)",
             gradient: "from-amber-500 to-orange-500",
         },
         {
@@ -52,7 +52,7 @@ function Home() {
             description:
                 "Identifiez les contenus générés par intelligence artificielle",
             link: "/detect-ai-image",
-            color: "#10b981",
+            color: "var(--green-600)",
             gradient: "from-emerald-500 to-teal-500",
         },
     ];
@@ -61,7 +61,7 @@ function Home() {
         <Box
             sx={{
                 width: "100%",
-                bgcolor: "white",
+                bgcolor: "var(--slate-50)",
                 minHeight: "100vh",
             }}
         >
@@ -69,22 +69,11 @@ function Home() {
             <Box
                 sx={{
                     width: "100%",
-                    background:
-                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    background: "var(--navy-600)",
                     color: "white",
                     py: { xs: 8, md: 12 },
                     position: "relative",
                     overflow: "hidden",
-                    "&::before": {
-                        content: '""',
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        background: "rgba(0, 0, 0, 0.1)",
-                        zIndex: 1,
-                    },
                 }}
             >
                 <Container
@@ -104,18 +93,20 @@ function Home() {
                         <Grid item xs={12} md={8}>
                             <Stack spacing={3}>
                                 <Chip
-                                    label="🚀 Nouvelle Version Disponible"
+                                    label="Nouvelle Version Disponible"
                                     sx={{
                                         alignSelf: "flex-start",
-                                        bgcolor: "rgba(255, 255, 255, 0.2)",
+                                        bgcolor: "rgba(255, 255, 255, 0.16)",
                                         color: "white",
-                                        backdropFilter: "blur(10px)",
+                                        fontWeight: 600,
+                                        borderRadius: "var(--radius-pill)",
                                         border: "1px solid rgba(255, 255, 255, 0.3)",
                                     }}
                                 />
                                 <Typography
                                     variant="h1"
                                     sx={{
+                                        fontFamily: "var(--font-display)",
                                         fontSize: {
                                             xs: "2.5rem",
                                             md: "3.5rem",
@@ -123,11 +114,7 @@ function Home() {
                                         },
                                         fontWeight: 800,
                                         lineHeight: 1.1,
-                                        background:
-                                            "linear-gradient(45deg, #ffffff, #f1f5f9)",
-                                        backgroundClip: "text",
-                                        WebkitBackgroundClip: "text",
-                                        WebkitTextFillColor: "transparent",
+                                        color: "white",
                                     }}
                                 >
                                     Check-IA
@@ -135,6 +122,7 @@ function Home() {
                                 <Typography
                                     variant="h4"
                                     sx={{
+                                        fontFamily: "var(--font-display)",
                                         fontSize: {
                                             xs: "1.25rem",
                                             md: "1.5rem",
@@ -177,16 +165,19 @@ function Home() {
                                                 endIcon={<ArrowForward />}
                                                 sx={{
                                                     bgcolor: "white",
-                                                    color: "#2563eb",
+                                                    color: "var(--navy-600)",
                                                     fontWeight: 600,
                                                     px: 4,
                                                     py: 1.5,
+                                                    minHeight: 48,
+                                                    borderRadius:
+                                                        "var(--radius-md)",
                                                     "&:hover": {
-                                                        bgcolor: "#f8fafc",
+                                                        bgcolor: "var(--navy-50)",
                                                         transform:
                                                             "translateY(-2px)",
                                                         boxShadow:
-                                                            "0 8px 25px rgba(0,0,0,0.15)",
+                                                            "var(--shadow-lg)",
                                                     },
                                                 }}
                                             >
@@ -203,9 +194,12 @@ function Home() {
                                                     fontWeight: 600,
                                                     px: 4,
                                                     py: 1.5,
+                                                    minHeight: 48,
+                                                    borderRadius:
+                                                        "var(--radius-md)",
                                                     "&:hover": {
                                                         bgcolor:
-                                                            "rgba(255, 255, 255, 0.1)",
+                                                            "rgba(255, 255, 255, 0.12)",
                                                         borderColor: "white",
                                                     },
                                                 }}
@@ -222,17 +216,20 @@ function Home() {
                                                 to="/register"
                                                 endIcon={<ArrowForward />}
                                                 sx={{
-                                                    bgcolor: "white",
-                                                    color: "#2563eb",
+                                                    bgcolor: "var(--green-500)",
+                                                    color: "white",
                                                     fontWeight: 600,
                                                     px: 4,
                                                     py: 1.5,
+                                                    minHeight: 48,
+                                                    borderRadius:
+                                                        "var(--radius-md)",
                                                     "&:hover": {
-                                                        bgcolor: "#f8fafc",
+                                                        bgcolor: "var(--green-600)",
                                                         transform:
                                                             "translateY(-2px)",
                                                         boxShadow:
-                                                            "0 8px 25px rgba(0,0,0,0.15)",
+                                                            "var(--shadow-lg)",
                                                     },
                                                 }}
                                             >
@@ -249,9 +246,12 @@ function Home() {
                                                     fontWeight: 600,
                                                     px: 4,
                                                     py: 1.5,
+                                                    minHeight: 48,
+                                                    borderRadius:
+                                                        "var(--radius-md)",
                                                     "&:hover": {
                                                         bgcolor:
-                                                            "rgba(255, 255, 255, 0.1)",
+                                                            "rgba(255, 255, 255, 0.12)",
                                                         borderColor: "white",
                                                     },
                                                 }}
@@ -277,8 +277,7 @@ function Home() {
                                         width: 280,
                                         height: 280,
                                         borderRadius: "50%",
-                                        background: "rgba(255, 255, 255, 0.1)",
-                                        backdropFilter: "blur(20px)",
+                                        background: "rgba(255, 255, 255, 0.08)",
                                         border: "2px solid rgba(255, 255, 255, 0.2)",
                                         display: "flex",
                                         alignItems: "center",
@@ -296,8 +295,10 @@ function Home() {
                                         },
                                     }}
                                 >
-                                    <VerifiedUser
-                                        sx={{ fontSize: 120, opacity: 0.9 }}
+                                    <Logo
+                                        variant="icon"
+                                        white
+                                        height={160}
                                     />
                                 </Box>
                             </Box>
@@ -307,7 +308,7 @@ function Home() {
             </Box>
 
             {/* Features Section */}
-            <Box sx={{ py: 6, bgcolor: "white" }}>
+            <Box sx={{ py: 6, bgcolor: "var(--slate-50)" }}>
                 <Container
                     maxWidth="xl"
                     sx={{
@@ -326,9 +327,10 @@ function Home() {
                             <Typography
                                 variant="h2"
                                 sx={{
+                                    fontFamily: "var(--font-display)",
                                     fontSize: { xs: "2rem", md: "2.5rem" },
                                     fontWeight: 700,
-                                    color: "#0f172a",
+                                    color: "var(--navy-900)",
                                     mb: 2,
                                 }}
                             >
@@ -337,7 +339,7 @@ function Home() {
                             <Typography
                                 variant="body1"
                                 sx={{
-                                    color: "#475569",
+                                    color: "var(--slate-700)",
                                     fontSize: "1.1rem",
                                     lineHeight: 1.6,
                                 }}
@@ -353,15 +355,16 @@ function Home() {
                                     <Card
                                         sx={{
                                             height: "100%",
-                                            border: "1px solid #f1f5f9",
-                                            borderRadius: 3,
+                                            bgcolor: "white",
+                                            border: "1px solid var(--slate-200)",
+                                            borderRadius: "var(--radius-lg)",
+                                            boxShadow: "var(--shadow-sm)",
                                             transition:
                                                 "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                                             "&:hover": {
                                                 transform: "translateY(-8px)",
-                                                boxShadow:
-                                                    "0 20px 40px rgba(0,0,0,0.1)",
-                                                borderColor: feature.color,
+                                                boxShadow: "var(--shadow-lg)",
+                                                borderColor: "var(--navy-200)",
                                             },
                                         }}
                                     >
@@ -372,8 +375,11 @@ function Home() {
                                                         width: 64,
                                                         height: 64,
                                                         bgcolor: feature.color,
+                                                        borderRadius:
+                                                            "var(--radius-md)",
                                                         mb: 1,
                                                     }}
+                                                    variant="rounded"
                                                 >
                                                     <feature.icon
                                                         sx={{ fontSize: 32 }}
@@ -383,8 +389,10 @@ function Home() {
                                                     <Typography
                                                         variant="h5"
                                                         sx={{
+                                                            fontFamily:
+                                                                "var(--font-display)",
                                                             fontWeight: 700,
-                                                            color: "#0f172a",
+                                                            color: "var(--navy-900)",
                                                             mb: 1,
                                                         }}
                                                     >
@@ -393,7 +401,7 @@ function Home() {
                                                     <Typography
                                                         variant="body1"
                                                         sx={{
-                                                            color: "#475569",
+                                                            color: "var(--slate-700)",
                                                             lineHeight: 1.6,
                                                         }}
                                                     >
@@ -413,12 +421,15 @@ function Home() {
                                                                 feature.color,
                                                             color: "white",
                                                             fontWeight: 600,
+                                                            minHeight: 48,
+                                                            borderRadius:
+                                                                "var(--radius-md)",
                                                             alignSelf:
                                                                 "flex-start",
                                                             "&:hover": {
                                                                 bgcolor:
                                                                     feature.color,
-                                                                filter: "brightness(0.9)",
+                                                                filter: "brightness(0.92)",
                                                             },
                                                         }}
                                                     >
@@ -436,7 +447,7 @@ function Home() {
             </Box>
 
             {/* Benefits Section */}
-            <Box sx={{ py: 6, bgcolor: "#f8fafc" }}>
+            <Box sx={{ py: 6, bgcolor: "var(--slate-50)" }}>
                 <Container
                     maxWidth="xl"
                     sx={{
@@ -455,9 +466,10 @@ function Home() {
                             <Typography
                                 variant="h2"
                                 sx={{
+                                    fontFamily: "var(--font-display)",
                                     fontSize: { xs: "2rem", md: "2.5rem" },
                                     fontWeight: 700,
-                                    color: "#0f172a",
+                                    color: "var(--navy-900)",
                                     mb: 2,
                                 }}
                             >
@@ -466,7 +478,7 @@ function Home() {
                             <Typography
                                 variant="body1"
                                 sx={{
-                                    color: "#475569",
+                                    color: "var(--slate-700)",
                                     fontSize: "1.1rem",
                                     lineHeight: 1.6,
                                 }}
@@ -499,15 +511,16 @@ function Home() {
                                     <Card
                                         sx={{
                                             height: "100%",
-                                            border: "1px solid #f1f5f9",
-                                            borderRadius: 3,
+                                            bgcolor: "white",
+                                            border: "1px solid var(--slate-200)",
+                                            borderRadius: "var(--radius-lg)",
+                                            boxShadow: "var(--shadow-sm)",
                                             transition:
                                                 "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
                                             "&:hover": {
                                                 transform: "translateY(-8px)",
-                                                boxShadow:
-                                                    "0 20px 40px rgba(0,0,0,0.1)",
-                                                borderColor: "#2563eb",
+                                                boxShadow: "var(--shadow-lg)",
+                                                borderColor: "var(--navy-200)",
                                             },
                                         }}
                                     >
@@ -517,9 +530,12 @@ function Home() {
                                                     sx={{
                                                         width: 64,
                                                         height: 64,
-                                                        bgcolor: "#2563eb",
+                                                        bgcolor: "var(--navy-600)",
+                                                        borderRadius:
+                                                            "var(--radius-md)",
                                                         mb: 1,
                                                     }}
+                                                    variant="rounded"
                                                 >
                                                     <benefit.icon
                                                         sx={{ fontSize: 32 }}
@@ -529,8 +545,10 @@ function Home() {
                                                     <Typography
                                                         variant="h5"
                                                         sx={{
+                                                            fontFamily:
+                                                                "var(--font-display)",
                                                             fontWeight: 700,
-                                                            color: "#0f172a",
+                                                            color: "var(--navy-900)",
                                                             mb: 1,
                                                         }}
                                                     >
@@ -539,7 +557,7 @@ function Home() {
                                                     <Typography
                                                         variant="body1"
                                                         sx={{
-                                                            color: "#475569",
+                                                            color: "var(--slate-700)",
                                                             lineHeight: 1.6,
                                                         }}
                                                     >
@@ -557,7 +575,7 @@ function Home() {
             </Box>
 
             {/* Why Choose Us Section */}
-            <Box sx={{ py: 8, bgcolor: "#f8fafc" }}>
+            <Box sx={{ py: 8, bgcolor: "var(--slate-50)" }}>
                 <Container
                     maxWidth="xl"
                     sx={{
@@ -571,9 +589,10 @@ function Home() {
                                 <Typography
                                     variant="h2"
                                     sx={{
+                                        fontFamily: "var(--font-display)",
                                         fontSize: { xs: "2rem", md: "2.5rem" },
                                         fontWeight: 700,
-                                        color: "#0f172a",
+                                        color: "var(--navy-900)",
                                     }}
                                 >
                                     Pourquoi Check-IA ?
@@ -581,7 +600,7 @@ function Home() {
                                 <Typography
                                     variant="body1"
                                     sx={{
-                                        color: "#475569",
+                                        color: "var(--slate-700)",
                                         fontSize: "1.1rem",
                                         lineHeight: 1.7,
                                     }}
@@ -608,13 +627,13 @@ function Home() {
                                         >
                                             <CheckCircle
                                                 sx={{
-                                                    color: "#10b981",
+                                                    color: "var(--green-500)",
                                                     fontSize: 24,
                                                 }}
                                             />
                                             <Typography
                                                 variant="body1"
-                                                sx={{ color: "#475569" }}
+                                                sx={{ color: "var(--slate-700)" }}
                                             >
                                                 {item}
                                             </Typography>
@@ -637,28 +656,34 @@ function Home() {
                                             sx={{
                                                 p: 3,
                                                 textAlign: "center",
-                                                border: "1px solid #e2e8f0",
+                                                bgcolor: "white",
+                                                border: "1px solid var(--slate-200)",
+                                                borderRadius:
+                                                    "var(--radius-lg)",
+                                                boxShadow: "var(--shadow-sm)",
                                             }}
                                         >
                                             <Speed
                                                 sx={{
                                                     fontSize: 48,
-                                                    color: "#2563eb",
+                                                    color: "var(--navy-600)",
                                                     mb: 1,
                                                 }}
                                             />
                                             <Typography
                                                 variant="h6"
                                                 sx={{
+                                                    fontFamily:
+                                                        "var(--font-display)",
                                                     fontWeight: 600,
-                                                    color: "#0f172a",
+                                                    color: "var(--navy-900)",
                                                 }}
                                             >
                                                 Rapide
                                             </Typography>
                                             <Typography
                                                 variant="body2"
-                                                sx={{ color: "#64748b" }}
+                                                sx={{ color: "var(--slate-500)" }}
                                             >
                                                 Résultats en secondes
                                             </Typography>
@@ -669,28 +694,34 @@ function Home() {
                                             sx={{
                                                 p: 3,
                                                 textAlign: "center",
-                                                border: "1px solid #e2e8f0",
+                                                bgcolor: "white",
+                                                border: "1px solid var(--slate-200)",
+                                                borderRadius:
+                                                    "var(--radius-lg)",
+                                                boxShadow: "var(--shadow-sm)",
                                             }}
                                         >
                                             <Security
                                                 sx={{
                                                     fontSize: 48,
-                                                    color: "#10b981",
+                                                    color: "var(--green-500)",
                                                     mb: 1,
                                                 }}
                                             />
                                             <Typography
                                                 variant="h6"
                                                 sx={{
+                                                    fontFamily:
+                                                        "var(--font-display)",
                                                     fontWeight: 600,
-                                                    color: "#0f172a",
+                                                    color: "var(--navy-900)",
                                                 }}
                                             >
                                                 Sécurisé
                                             </Typography>
                                             <Typography
                                                 variant="body2"
-                                                sx={{ color: "#64748b" }}
+                                                sx={{ color: "var(--slate-500)" }}
                                             >
                                                 Données protégées
                                             </Typography>
@@ -701,29 +732,35 @@ function Home() {
                                             sx={{
                                                 p: 3,
                                                 textAlign: "center",
-                                                border: "1px solid #e2e8f0",
+                                                bgcolor: "white",
+                                                border: "1px solid var(--slate-200)",
+                                                borderRadius:
+                                                    "var(--radius-lg)",
+                                                boxShadow: "var(--shadow-sm)",
                                                 mt: 2,
                                             }}
                                         >
                                             <TrendingUp
                                                 sx={{
                                                     fontSize: 48,
-                                                    color: "#f59e0b",
+                                                    color: "var(--green-600)",
                                                     mb: 1,
                                                 }}
                                             />
                                             <Typography
                                                 variant="h6"
                                                 sx={{
+                                                    fontFamily:
+                                                        "var(--font-display)",
                                                     fontWeight: 600,
-                                                    color: "#0f172a",
+                                                    color: "var(--navy-900)",
                                                 }}
                                             >
                                                 Fiable
                                             </Typography>
                                             <Typography
                                                 variant="body2"
-                                                sx={{ color: "#64748b" }}
+                                                sx={{ color: "var(--slate-500)" }}
                                             >
                                                 99.2% de précision
                                             </Typography>
@@ -740,8 +777,7 @@ function Home() {
             <Box
                 sx={{
                     py: 8,
-                    background:
-                        "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    background: "var(--navy-600)",
                     color: "white",
                     textAlign: "center",
                 }}
@@ -754,9 +790,11 @@ function Home() {
                     }}
                 >
                     <Stack spacing={4} alignItems="center" textAlign="center">
+                        <Logo white height={48} />
                         <Typography
                             variant="h2"
                             sx={{
+                                fontFamily: "var(--font-display)",
                                 fontSize: { xs: "2rem", md: "2.5rem" },
                                 fontWeight: 700,
                             }}
@@ -782,16 +820,18 @@ function Home() {
                             to={isLoggedIn ? "/submit" : "/register"}
                             endIcon={<ArrowForward />}
                             sx={{
-                                bgcolor: "white",
-                                color: "#2563eb",
+                                bgcolor: "var(--green-500)",
+                                color: "white",
                                 fontWeight: 600,
                                 px: 4,
                                 py: 1.5,
+                                minHeight: 48,
                                 fontSize: "1.1rem",
+                                borderRadius: "var(--radius-md)",
                                 "&:hover": {
-                                    bgcolor: "#f8fafc",
+                                    bgcolor: "var(--green-600)",
                                     transform: "translateY(-2px)",
-                                    boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
+                                    boxShadow: "var(--shadow-lg)",
                                 },
                             }}
                         >

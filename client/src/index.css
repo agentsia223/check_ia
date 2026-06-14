@@ -1,63 +1,214 @@
-:root {
-  /* Modern Color Palette inspired by West African aesthetics */
-  --primary-color: #2563eb; /* Modern blue */
-  --primary-dark: #1d4ed8;
-  --primary-light: #3b82f6;
-  --secondary-color: #f59e0b; /* Warm amber */
-  --secondary-dark: #d97706;
-  --secondary-light: #fbbf24;
-  
-  /* Neutral colors */
-  --background-primary: #ffffff;
-  --background-secondary: #f8fafc;
-  --background-tertiary: #f1f5f9;
-  --surface: #ffffff;
-  --surface-elevated: #ffffff;
-  
-  /* Text colors */
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-tertiary: #64748b;
-  --text-muted: #94a3b8;
-  
-  /* Status colors */
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --info: #3b82f6;
-  
-  /* Borders */
-  --border-color: #e2e8f0;
-  --border-color-light: #f1f5f9;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  
-  /* Radius */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  
-  /* Spacing */
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
-  
-  /* Typography */
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
-  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-}
+/* ============================================================
+   CHECK-IA · Design System — global tokens & base styles
+   Brand: Navy #28348a + Green #39a935 (from the shield logo)
+   Fonts: Barlow Semi Condensed (display) · Barlow (body) · IBM Plex Mono
+   ============================================================ */
 
-/* Import Inter font */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  /* ---- Brand: Navy (primary) ---- */
+  --navy-50:  #eceefb;
+  --navy-100: #d6daf4;
+  --navy-200: #aeb6e8;
+  --navy-300: #818cd6;
+  --navy-400: #5965bf;
+  --navy-500: #3a47a6;
+  --navy-600: #28348a;   /* core brand navy */
+  --navy-700: #212c74;
+  --navy-800: #1a2359;
+  --navy-900: #131941;
+  --navy-950: #0c0f29;
+
+  /* ---- Brand: Green (accent / "verified true") ---- */
+  --green-50:  #edf8ec;
+  --green-100: #d4efd2;
+  --green-200: #a9dfa6;
+  --green-300: #79cc74;
+  --green-400: #52ba4d;
+  --green-500: #39a935;  /* core brand green */
+  --green-600: #2f8c2c;
+  --green-700: #276f25;
+  --green-800: #20571f;
+  --green-900: #163d15;
+
+  /* ---- Neutrals: cool slate (tuned toward navy) ---- */
+  --slate-0:   #ffffff;
+  --slate-50:  #f7f8fb;
+  --slate-100: #eef0f5;
+  --slate-200: #e0e3ec;
+  --slate-300: #c7ccda;
+  --slate-400: #a3aabf;
+  --slate-500: #7c8398;
+  --slate-600: #5b6175;
+  --slate-700: #434860;
+  --slate-800: #2c3047;
+  --slate-900: #1a1d2e;
+  --slate-950: #0e1020;
+
+  /* ---- Verdict / status hues ---- */
+  --red-50:   #fdeceb;
+  --red-100:  #fbd9d5;
+  --red-200:  #f6b3ab;
+  --red-500:  #e5483d;
+  --red-600:  #d92d20;
+  --red-700:  #b42318;
+
+  --amber-50:  #fdf4e7;
+  --amber-100: #fbe5c6;
+  --amber-200: #f6cd8d;
+  --amber-500: #e8870a;
+  --amber-600: #c46f06;
+  --amber-700: #97540a;
+
+  /* ============================================================
+     SEMANTIC ALIASES — reach for these in product code
+     ============================================================ */
+
+  /* Brand */
+  --brand:            var(--navy-600);
+  --brand-strong:     var(--navy-700);
+  --brand-soft:       var(--navy-50);
+  --accent:           var(--green-500);
+  --accent-strong:    var(--green-600);
+  --accent-soft:      var(--green-50);
+
+  /* Surfaces */
+  --surface-page:     var(--slate-50);
+  --surface-card:     var(--slate-0);
+  --surface-sunken:   var(--slate-100);
+  --surface-inverse:  var(--navy-700);
+  --surface-brand:    var(--navy-600);
+
+  /* Text */
+  --text-strong:      var(--navy-900);
+  --text-body:        var(--slate-800);
+  --text-muted:       var(--slate-500);
+  --text-faint:       var(--slate-400);
+  --text-on-brand:    #ffffff;
+  --text-on-accent:   #ffffff;
+  --text-link:        var(--navy-600);
+
+  /* Borders & dividers */
+  --border-subtle:    var(--slate-200);
+  --border-default:   var(--slate-300);
+  --border-strong:    var(--slate-400);
+  --border-brand:     var(--navy-600);
+  --ring-focus:       color-mix(in srgb, var(--navy-600) 45%, transparent);
+
+  /* Verdict semantics — the core of a fact-checking product */
+  --verdict-true-fg:        var(--green-700);
+  --verdict-true-bg:        var(--green-50);
+  --verdict-true-border:    var(--green-200);
+  --verdict-true-solid:     var(--green-500);
+
+  --verdict-false-fg:       var(--red-700);
+  --verdict-false-bg:       var(--red-50);
+  --verdict-false-border:   var(--red-200);
+  --verdict-false-solid:    var(--red-600);
+
+  --verdict-misleading-fg:     var(--amber-700);
+  --verdict-misleading-bg:     var(--amber-50);
+  --verdict-misleading-border: var(--amber-200);
+  --verdict-misleading-solid:  var(--amber-500);
+
+  --verdict-unverified-fg:     var(--slate-600);
+  --verdict-unverified-bg:     var(--slate-100);
+  --verdict-unverified-border: var(--slate-300);
+  --verdict-unverified-solid:  var(--slate-500);
+
+  /* Status (UI feedback) */
+  --success-fg: var(--green-700);  --success-bg: var(--green-50);
+  --danger-fg:  var(--red-700);    --danger-bg:  var(--red-50);
+  --warning-fg: var(--amber-700);  --warning-bg: var(--amber-50);
+  --info-fg:    var(--navy-700);   --info-bg:    var(--navy-50);
+
+  /* ---- Typography ---- */
+  --font-display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body:    "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono:    "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+
+  /* ---- Spacing (8px grid) ---- */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.5rem;
+  --space-6:  2rem;
+  --space-7:  2.5rem;
+  --space-8:  3rem;
+  --space-9:  4rem;
+  --space-10: 5rem;
+  --space-12: 6rem;
+  --hit-target: 48px;     /* accessibility floor for touch / low-literacy users */
+
+  /* ---- Shape ---- */
+  --radius-xs:   4px;
+  --radius-sm:   8px;
+  --radius-md:   12px;   /* default control / card radius */
+  --radius-lg:   16px;
+  --radius-xl:   22px;
+  --radius-2xl:  30px;
+  --radius-pill: 999px;
+  --radius-full: 50%;
+
+  /* ---- Elevation — cool navy-tinted shadows, never pure black ---- */
+  --shadow-xs:  0 1px 2px rgba(19, 25, 65, 0.06);
+  --shadow-sm:  0 1px 3px rgba(19, 25, 65, 0.08), 0 1px 2px rgba(19, 25, 65, 0.05);
+  --shadow-md:  0 4px 12px rgba(19, 25, 65, 0.10), 0 2px 4px rgba(19, 25, 65, 0.06);
+  --shadow-lg:  0 12px 28px rgba(19, 25, 65, 0.14), 0 4px 10px rgba(19, 25, 65, 0.07);
+  --shadow-xl:  0 24px 56px rgba(19, 25, 65, 0.18);
+  --shadow-focus: 0 0 0 3px var(--ring-focus);
+
+  /* ---- Motion ---- */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out:      cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 360ms;
+
+  /* ============================================================
+     BACKWARD-COMPAT ALIASES
+     Older components reference these names; map them onto the
+     new brand so nothing renders off-palette during migration.
+     ============================================================ */
+  --primary-color:  var(--navy-600);
+  --primary-dark:   var(--navy-700);
+  --primary-light:  var(--navy-500);
+  --secondary-color: var(--green-500);
+  --secondary-dark:  var(--green-600);
+  --secondary-light: var(--green-400);
+
+  --background-primary:   var(--slate-0);
+  --background-secondary: var(--slate-50);
+  --background-tertiary:  var(--slate-100);
+  --surface:          var(--slate-0);
+  --surface-elevated: var(--slate-0);
+
+  --text-primary:   var(--navy-900);
+  --text-secondary: var(--slate-700);
+  --text-tertiary:  var(--slate-600);
+
+  --success: var(--green-500);
+  --warning: var(--amber-500);
+  --error:   var(--red-600);
+  --info:    var(--navy-600);
+
+  --border-color:       var(--slate-200);
+  --border-color-light: var(--slate-100);
+
+  --space-xs: var(--space-1);
+  --space-sm: var(--space-2);
+  --space-md: var(--space-4);
+  --space-lg: var(--space-5);
+  --space-xl: var(--space-6);
+  --space-2xl: var(--space-8);
+}
 
 /* Reset and base styles */
 * {
@@ -69,48 +220,44 @@ body {
   padding: 0;
   font-family: var(--font-body);
   font-weight: 400;
+  font-size: 17px;            /* generous body size for low-literacy / small-screen readers */
   line-height: 1.6;
-  color: var(--text-primary);
-  background-color: var(--background-primary);
+  color: var(--text-body);
+  background-color: var(--surface-page);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-feature-settings: 'cv01', 'cv02', 'cv03', 'cv04';
 }
 
-/* Smooth scrolling */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  color: var(--text-strong);
+  letter-spacing: -0.01em;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
 /* Selection colors */
 ::selection {
-  background-color: var(--primary-light);
-  color: white;
+  background-color: var(--navy-600);
+  color: #fff;
 }
-
 ::-moz-selection {
-  background-color: var(--primary-light);
-  color: white;
+  background-color: var(--navy-600);
+  color: #fff;
 }
 
 /* Focus styles for accessibility */
 :focus-visible {
-  outline: 2px solid var(--primary-color);
+  outline: 2px solid var(--navy-600);
   outline-offset: 2px;
 }
 
 /* Utility classes */
-.text-center {
-  text-align: center;
-}
-
-.text-left {
-  text-align: left;
-}
-
-.text-right {
-  text-align: right;
-}
+.text-center { text-align: center; }
+.text-left   { text-align: left; }
+.text-right  { text-align: right; }
 
 .sr-only {
   position: absolute;
@@ -126,41 +273,31 @@ html {
 
 /* Animation utilities */
 .transition-all {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all var(--duration-base) var(--ease-standard);
 }
-
 .transition-colors {
-  transition: color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color var(--duration-base) var(--ease-standard),
+              background-color var(--duration-base) var(--ease-standard),
+              border-color var(--duration-base) var(--ease-standard);
 }
 
 /* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--background-secondary);
-}
-
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--surface-sunken); }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color);
+  background: var(--slate-300);
   border-radius: var(--radius-sm);
 }
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
+::-webkit-scrollbar-thumb:hover { background: var(--slate-400); }
 
 /* Code styling */
 code {
   font-family: var(--font-mono);
   font-size: 0.875em;
-  background-color: var(--background-tertiary);
+  background-color: var(--surface-sunken);
   padding: 0.125rem 0.25rem;
   border-radius: var(--radius-sm);
-  color: var(--text-primary);
+  color: var(--navy-700);
 }
 
 /* Reduced motion for accessibility */

@@ -1,71 +1,89 @@
 import React from "react";
 import { Container, Typography, Box, Paper, Divider } from "@mui/material";
+import Logo from "./brand/Logo";
 
 function Terms() {
+
+    const sectionHeadingSx = {
+        fontWeight: 700,
+        fontFamily: 'var(--font-display)',
+        color: 'var(--navy-900)',
+        mb: 2
+    };
+
+    const bodyTextSx = {
+        color: 'var(--slate-700)',
+        lineHeight: 1.8
+    };
+
+    const dividerSx = { my: 4, borderColor: 'var(--border-subtle)' };
 
     return (
         <Container maxWidth="xl" sx={{ py: 6 }}>
             <Paper
                 elevation={0}
-                sx={{ 
+                sx={{
                     width: '100%',
-                    p: 4,
-                    borderRadius: 4,
-                    border: '1px solid #e2e8f0',
-                    bgcolor: 'white'
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--border-subtle)',
+                    bgcolor: 'white',
+                    boxShadow: 'var(--shadow-sm)',
+                    overflow: 'hidden'
                 }}
             >
-                <Box sx={{ width: '100%' }}>
+                {/* Solid navy hero band */}
+                <Box
+                    sx={{
+                        bgcolor: 'var(--navy-600)',
+                        px: { xs: 3, sm: 5 },
+                        py: { xs: 4, sm: 5 }
+                    }}
+                >
+                    <Logo white height={40} style={{ marginBottom: 20 }} />
                     <Typography
                         variant="h3"
                         gutterBottom
-                        sx={{ 
+                        sx={{
                             fontWeight: 800,
-                            color: '#0f172a',
-                            mb: 4,
-                            background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
-                            backgroundClip: 'text',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent'
+                            fontFamily: 'var(--font-display)',
+                            color: 'white',
+                            mb: 0
                         }}
                     >
                         Conditions d'Utilisation
                     </Typography>
-                    <Typography 
-                        variant="body1" 
+                </Box>
+
+                <Box sx={{ width: '100%', p: { xs: 3, sm: 5 } }}>
+                    <Typography
+                        variant="body1"
                         paragraph
-                        sx={{ 
-                            color: '#64748b',
-                            lineHeight: 1.8
+                        sx={{
+                            color: 'var(--slate-700)',
+                            lineHeight: 1.8,
+                            mt: 1
                         }}
                     >
-                        Bienvenue sur Check-IA, une plateforme de fact-checking 
+                        Bienvenue sur Check-IA, une plateforme de fact-checking
                         conçue pour les francophones d'Afrique de l'Ouest. En utilisant
-                        notre plateforme, vous acceptez de respecter les présentes 
+                        notre plateforme, vous acceptez de respecter les présentes
                         conditions d'utilisation.
                     </Typography>
 
-                    <Divider sx={{ my: 4, borderColor: '#e2e8f0' }} />
+                    <Divider sx={dividerSx} />
 
                     <Box sx={{ mb: 6 }}>
                         <Typography
                             variant="h5"
                             gutterBottom
-                            sx={{ 
-                                fontWeight: 700,
-                                color: '#0f172a',
-                                mb: 2
-                            }}
+                            sx={sectionHeadingSx}
                         >
                             1. Utilisation de la Plateforme
                         </Typography>
-                        <Typography 
-                            variant="body1" 
+                        <Typography
+                            variant="body1"
                             paragraph
-                            sx={{ 
-                                color: '#64748b',
-                                lineHeight: 1.8
-                            }}
+                            sx={bodyTextSx}
                         >
                             Notre plateforme est destinée à aider les utilisateurs à
                             soumettre, vérifier, et consulter des informations
@@ -78,27 +96,20 @@ function Terms() {
                         </Typography>
                     </Box>
 
-                    <Divider sx={{ my: 4, borderColor: '#e2e8f0' }} />
+                    <Divider sx={dividerSx} />
 
                     <Box sx={{ mb: 6 }}>
                         <Typography
                             variant="h5"
                             gutterBottom
-                            sx={{ 
-                                fontWeight: 700,
-                                color: '#0f172a',
-                                mb: 2
-                            }}
+                            sx={sectionHeadingSx}
                         >
                             2. Soumission de Contenu
                         </Typography>
-                        <Typography 
-                            variant="body1" 
+                        <Typography
+                            variant="body1"
                             paragraph
-                            sx={{ 
-                                color: '#64748b',
-                                lineHeight: 1.8
-                            }}
+                            sx={bodyTextSx}
                         >
                             En soumettant un fait à vérifier, vous reconnaissez que
                             vous êtes le propriétaire ou que vous avez les droits de
@@ -110,27 +121,20 @@ function Terms() {
                         </Typography>
                     </Box>
 
-                    <Divider sx={{ my: 4, borderColor: '#e2e8f0' }} />
+                    <Divider sx={dividerSx} />
 
                     <Box sx={{ mb: 6 }}>
                         <Typography
                             variant="h5"
                             gutterBottom
-                            sx={{ 
-                                fontWeight: 700,
-                                color: '#0f172a',
-                                mb: 2
-                            }}
+                            sx={sectionHeadingSx}
                         >
                             3. Exactitude des Informations
                         </Typography>
-                        <Typography 
-                            variant="body1" 
+                        <Typography
+                            variant="body1"
                             paragraph
-                            sx={{ 
-                                color: '#64748b',
-                                lineHeight: 1.8
-                            }}
+                            sx={bodyTextSx}
                         >
                             Nous nous efforçons de fournir des informations exactes
                             et à jour, mais nous ne garantissons pas la précision
@@ -142,27 +146,20 @@ function Terms() {
                         </Typography>
                     </Box>
 
-                    <Divider sx={{ my: 4, borderColor: '#e2e8f0' }} />
+                    <Divider sx={dividerSx} />
 
                     <Box sx={{ mb: 6 }}>
                         <Typography
                             variant="h5"
                             gutterBottom
-                            sx={{ 
-                                fontWeight: 700,
-                                color: '#0f172a',
-                                mb: 2
-                            }}
+                            sx={sectionHeadingSx}
                         >
                             4. Responsabilité de l'Utilisateur
                         </Typography>
-                        <Typography 
-                            variant="body1" 
+                        <Typography
+                            variant="body1"
                             paragraph
-                            sx={{ 
-                                color: '#64748b',
-                                lineHeight: 1.8
-                            }}
+                            sx={bodyTextSx}
                         >
                             Vous êtes seul responsable de l'utilisation que vous
                             faites des informations obtenues sur notre plateforme.
@@ -172,21 +169,21 @@ function Terms() {
                         </Typography>
                     </Box>
 
-                    <Divider sx={{ my: 4, borderColor: '#e2e8f0' }} />
+                    <Divider sx={dividerSx} />
 
                     <Box sx={{ mb: 6 }}>
                         <Typography
                             variant="h5"
                             gutterBottom
-                            sx={{ 
-                                fontWeight: 700,
-                                color: '#0f172a',
-                                mb: 2
-                            }}
+                            sx={sectionHeadingSx}
                         >
                             5. Protection des Données
                         </Typography>
-                        <Typography variant="body1" paragraph>
+                        <Typography
+                            variant="body1"
+                            paragraph
+                            sx={bodyTextSx}
+                        >
                             Nous respectons la vie privée de nos utilisateurs. Les
                             informations personnelles recueillies sont traitées
                             conformément à notre politique de confidentialité. Nous
@@ -195,27 +192,20 @@ function Terms() {
                         </Typography>
                     </Box>
 
-                    <Divider sx={{ my: 4, borderColor: '#e2e8f0' }} />
+                    <Divider sx={dividerSx} />
 
                     <Box sx={{ mb: 6 }}>
                         <Typography
                             variant="h5"
                             gutterBottom
-                            sx={{ 
-                                fontWeight: 700,
-                                color: '#0f172a',
-                                mb: 2
-                            }}
+                            sx={sectionHeadingSx}
                         >
                             6. Modifications des Conditions
                         </Typography>
-                        <Typography 
-                            variant="body1" 
+                        <Typography
+                            variant="body1"
                             paragraph
-                            sx={{ 
-                                color: '#64748b',
-                                lineHeight: 1.8
-                            }}
+                            sx={bodyTextSx}
                         >
                             Nous nous réservons le droit de modifier ces conditions
                             d'utilisation à tout moment. Toute modification sera
@@ -225,27 +215,20 @@ function Terms() {
                         </Typography>
                     </Box>
 
-                    <Divider sx={{ my: 4, borderColor: '#e2e8f0' }} />
+                    <Divider sx={dividerSx} />
 
                     <Box sx={{ mb: 6 }}>
                         <Typography
                             variant="h5"
                             gutterBottom
-                            sx={{ 
-                                fontWeight: 700,
-                                color: '#0f172a',
-                                mb: 2
-                            }}
+                            sx={sectionHeadingSx}
                         >
                             7. Contact
                         </Typography>
-                        <Typography 
-                            variant="body1" 
+                        <Typography
+                            variant="body1"
                             paragraph
-                            sx={{ 
-                                color: '#64748b',
-                                lineHeight: 1.8
-                            }}
+                            sx={bodyTextSx}
                         >
                             Si vous avez des questions concernant ces conditions
                             d'utilisation, veuillez nous contacter à l'adresse
