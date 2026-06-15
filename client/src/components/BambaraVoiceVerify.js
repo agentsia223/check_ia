@@ -33,7 +33,7 @@ function BambaraVoiceVerify({
     let statusText;
     if (isRecording) statusText = "Parlez maintenant. La vérification démarre dès l'arrêt.";
     else if (phase === "transcribing") statusText = "Transcription et traduction en cours...";
-    else if (phase === "review") statusText = `Vérification automatique dans ${countdown} s...`;
+    else if (phase === "review") statusText = `Vérification automatique dans ${countdown ?? "…"} s...`;
     else if (isTouch) statusText = "Maintenez le bouton et parlez. La vérification se lance automatiquement.";
     else statusText = "Appuyez sur Espace (ou le bouton) et parlez. La vérification se lance automatiquement.";
 
@@ -69,7 +69,11 @@ function BambaraVoiceVerify({
                 {buttonLabel}
             </Button>
 
-            <Typography variant="body2" sx={{ mt: 2, color: "var(--slate-600)" }}>
+            <Typography
+                variant="body2"
+                aria-live="polite"
+                sx={{ mt: 2, color: "var(--slate-600)" }}
+            >
                 {statusText}
             </Typography>
 
