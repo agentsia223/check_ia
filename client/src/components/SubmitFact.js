@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useRef, useCallback } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 import { toast, ToastContainer } from "react-toastify";
@@ -21,13 +21,13 @@ import {
     Warning,
     HourglassEmpty,
     Search,
-    Mic,
-    StopCircle,
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
 import Logo from "./brand/Logo";
 import VerdictBadge from "./brand/VerdictBadge";
 import SourceCard from "./brand/SourceCard";
+import BambaraVoiceVerify from "./BambaraVoiceVerify";
+import { useBambaraVoiceVerify } from "../hooks/useBambaraVoiceVerify";
 
 // Fallback responses si aucune explication détaillée n'est disponible
 const fallbackResponses = {
@@ -44,21 +44,19 @@ function SubmitFact() {
     const [submissionId, setSubmissionId] = useState(null);
     const [webSources, setWebSources] = useState([]);
     const [detailedResult, setDetailedResult] = useState("");
-    const [isRecording, setIsRecording] = useState(false);
-    const [transcribing, setTranscribing] = useState(false);
-    const [bambaraTranscript, setBambaraTranscript] = useState("");
-    const mediaRecorderRef = useRef(null);
-    const mediaStreamRef = useRef(null);
-    const audioChunksRef = useRef([]);
     const { getAccessToken, isLoggedIn } = useContext(AuthContext);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-
+    const submitForVerification = (text) => {
         if (!isLoggedIn) {
             toast.error(
                 "Vous devez être connecté pour soumettre une information."
             );
+            return;
+        }
+        if (loading) {
+            return;
+        }
+        if (!text || !text.trim()) {
             return;
         }
 
@@ -72,7 +70,7 @@ function SubmitFact() {
         axios
             .post(
                 `${API_BASE_URL}submissions/`,
-                { texte, source },
+                { texte: text, source },
                 {
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
@@ -92,6 +90,11 @@ function SubmitFact() {
                     "Erreur lors de la soumission. Veuillez réessayer."
                 );
             });
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        submitForVerification(texte);
     };
 
     // Polling pour vérifier le statut
@@ -149,118 +152,15 @@ function SubmitFact() {
         }
     };
 
-    const stopMediaStream = useCallback(() => {
-        if (mediaStreamRef.current) {
-            mediaStreamRef.current.getTracks().forEach((track) => track.stop());
-            mediaStreamRef.current = null;
-        }
-    }, []);
-
-    useEffect(() => {
-        return () => {
-            stopMediaStream();
-        };
-    }, [stopMediaStream]);
-
-    const transcribeAndTranslateAudio = async (audioBlob) => {
-        if (!audioBlob || audioBlob.size === 0) {
-            toast.error("Aucun audio n'a été enregistré.");
-            return;
-        }
-
-        const accessToken = getAccessToken();
-        const formData = new FormData();
-        const audioFile = new File(
-            [audioBlob],
-            `bambara-recording-${Date.now()}.webm`,
-            { type: audioBlob.type || "audio/webm" }
-        );
-        formData.append("file", audioFile);
-        formData.append("language", "bm");
-
-        setTranscribing(true);
-        try {
-            const transcriptionResponse = await axios.post(
-                `${API_BASE_URL}bambara/transcribe/`,
-                formData,
-                {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        "Content-Type": "multipart/form-data",
-                    },
-                }
-            );
-            const transcript = transcriptionResponse.data.text || "";
-            setBambaraTranscript(transcript);
-
-            if (!transcript.trim()) {
-                toast.error("Aucune transcription n'a été détectée.");
-                return;
-            }
-
-            const translationResponse = await axios.post(
-                `${API_BASE_URL}bambara/translate/`,
-                { text: transcript, source_lang: "bm", target_lang: "fr" },
-                {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-            setTexte(translationResponse.data.translated_text || transcript);
+    const voice = useBambaraVoiceVerify({
+        getAccessToken,
+        isLoggedIn,
+        onText: (frenchText) => {
+            setTexte(frenchText);
             resetResultState();
-            toast.success("Audio transcrit et traduit avec succès.");
-        } catch (error) {
-            console.error("Erreur lors de la transcription Bambara :", error);
-            toast.error("Impossible de transcrire cet audio. Veuillez réessayer.");
-        } finally {
-            setTranscribing(false);
-        }
-    };
-
-    const handleVoiceRecording = async () => {
-        if (isRecording) {
-            mediaRecorderRef.current?.stop();
-            setIsRecording(false);
-            return;
-        }
-
-        if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-            toast.error("L'enregistrement vocal n'est pas disponible sur ce navigateur.");
-            return;
-        }
-
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
-            mediaStreamRef.current = stream;
-            mediaRecorderRef.current = recorder;
-            audioChunksRef.current = [];
-            setBambaraTranscript("");
-            resetResultState();
-
-            recorder.ondataavailable = (event) => {
-                if (event.data && event.data.size > 0) {
-                    audioChunksRef.current.push(event.data);
-                }
-            };
-
-            recorder.onstop = () => {
-                const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-                stopMediaStream();
-                transcribeAndTranslateAudio(audioBlob);
-            };
-
-            recorder.start();
-            setIsRecording(true);
-        } catch (error) {
-            console.error("Erreur lors de l'enregistrement Bambara :", error);
-            stopMediaStream();
-            setIsRecording(false);
-            toast.error("Impossible d'accéder au microphone.");
-        }
-    };
+        },
+        onVerify: () => submitForVerification(texte),
+    });
 
     // Function to get the display text for the result
     const getResultText = () => {
@@ -444,52 +344,17 @@ function SubmitFact() {
                                     >
                                         Information à vérifier
                                     </Typography>
-                                    <Box
-                                        sx={{
-                                            mb: 3,
-                                            p: 3,
-                                            border: "1px solid var(--slate-200)",
-                                            borderRadius: "var(--radius-md)",
-                                            bgcolor: "var(--slate-50)",
-                                        }}
-                                    >
-                                        <Button
-                                            variant="contained"
-                                            type="button"
-                                            fullWidth
-                                            startIcon={isRecording ? <StopCircle /> : <Mic />}
-                                            disabled={transcribing || loading}
-                                            onClick={handleVoiceRecording}
-                                            sx={{
-                                                minHeight: 52,
-                                                borderRadius: "var(--radius-md)",
-                                                bgcolor: isRecording ? "var(--red-600)" : "var(--navy-600)",
-                                                fontWeight: 700,
-                                                fontSize: "1rem",
-                                                "&:hover": {
-                                                    bgcolor: isRecording ? "var(--red-700)" : "var(--navy-700)",
-                                                },
-                                            }}
-                                        >
-                                            {transcribing
-                                                ? "Traitement de l'audio..."
-                                                : isRecording
-                                                    ? "Arrêter l'enregistrement"
-                                                    : "Enregistrer en Bambara"}
-                                        </Button>
-                                        <Typography variant="body2" sx={{ mt: 2, color: "var(--slate-600)" }}>
-                                            {isRecording
-                                                ? "Parlez maintenant. La transcription démarre automatiquement à l'arrêt."
-                                                : transcribing
-                                                    ? "Transcription et traduction en cours..."
-                                                    : "Appuyez pour enregistrer une note vocale. Le texte sera ajouté automatiquement."}
-                                        </Typography>
-                                        {bambaraTranscript && (
-                                            <Typography variant="body2" sx={{ mt: 1, color: "var(--slate-600)" }}>
-                                                Transcription Bambara : {bambaraTranscript}
-                                            </Typography>
-                                        )}
-                                    </Box>
+                                    <BambaraVoiceVerify
+                                        phase={voice.phase}
+                                        transcript={voice.transcript}
+                                        countdown={voice.countdown}
+                                        isTouch={voice.isTouch}
+                                        loading={loading}
+                                        onToggle={voice.toggle}
+                                        onStart={voice.start}
+                                        onStop={voice.stop}
+                                        onCancel={voice.cancel}
+                                    />
                                     <TextField
                                         label="Saisissez le texte, l'affirmation ou la déclaration à vérifier"
                                         multiline
