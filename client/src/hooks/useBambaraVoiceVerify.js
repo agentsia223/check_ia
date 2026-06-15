@@ -8,6 +8,11 @@ export const MIN_RECORDING_MS = 400;
 
 // Drives the Bambara voice → verify flow:
 // idle → recording → transcribing → review(countdown) → (verify) → idle
+/**
+ * Bambara voice → auto-verify flow (idle → recording → transcribing → review → verify).
+ * `getAccessToken`, `onText`, and `onVerify` may change each render — the latest is always
+ * used. Prefer a stable `getAccessToken` to avoid needless keydown-listener re-subscription.
+ */
 export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVerify }) {
     const [phase, setPhase] = useState("idle");
     const [transcript, setTranscript] = useState("");
@@ -19,6 +24,7 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
     const recordStartRef = useRef(0);
     const countdownTimerRef = useRef(null);
     const verifyTimerRef = useRef(null);
+    const processAudioRef = useRef(null);
 
     // Always call the latest callbacks so timers fired later use current state.
     const onTextRef = useRef(onText);
@@ -131,6 +137,10 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
         }
     }, [getAccessToken, startCountdown]);
 
+    useEffect(() => {
+        processAudioRef.current = processAudio;
+    }, [processAudio]);
+
     const start = useCallback(async () => {
         if (phase !== "idle") return;
         if (!isLoggedIn) {
@@ -166,7 +176,14 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
                     setPhase("idle");
                     return;
                 }
-                processAudio(audioBlob);
+                processAudioRef.current(audioBlob);
+            };
+
+            recorder.onerror = (event) => {
+                console.error("Erreur du MediaRecorder Bambara :", event?.error || event);
+                stopStream();
+                setPhase("idle");
+                toast.error("Une erreur s'est produite pendant l'enregistrement.");
             };
 
             recorder.start();
@@ -177,7 +194,7 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
             setPhase("idle");
             toast.error("Impossible d'accéder au microphone.");
         }
-    }, [phase, isLoggedIn, stopStream, processAudio]);
+    }, [phase, isLoggedIn, stopStream]);
 
     const stop = useCallback(() => {
         if (phase === "recording") {
