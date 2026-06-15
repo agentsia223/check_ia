@@ -134,7 +134,24 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
             startCountdown();
         } catch (error) {
             console.error("Erreur lors de la transcription Bambara :", error);
-            toast.error("Impossible de transcrire cet audio. Veuillez réessayer.");
+            const httpStatus = error?.response?.status;
+            const serverError = error?.response?.data?.error || "";
+            let message;
+            if (!error?.response) {
+                // No response reached the browser: network error, dropped
+                // connection, or a worker killed mid-request (surfaces as CORS).
+                message =
+                    "Connexion au service de transcription impossible. Vérifiez votre connexion et réessayez.";
+            } else if (httpStatus === 503) {
+                message =
+                    "Le service de transcription est momentanément indisponible. Réessayez plus tard.";
+            } else if (httpStatus === 504 || /timed out|timeout/i.test(serverError)) {
+                message =
+                    "La transcription a pris trop de temps. Essayez un enregistrement plus court.";
+            } else {
+                message = "Impossible de transcrire cet audio. Veuillez réessayer.";
+            }
+            toast.error(message);
             setPhase("idle");
         }
     }, [getAccessToken, startCountdown]);
