@@ -24,7 +24,45 @@ const renderSubmitFact = () =>
         </AuthContext.Provider>
     );
 
-test("transcribes Bambara audio and fills the claim text", async () => {
+class MockMediaRecorder {
+    static instances = [];
+
+    constructor(stream) {
+        this.stream = stream;
+        this.state = "inactive";
+        this.ondataavailable = null;
+        this.onstop = null;
+        MockMediaRecorder.instances.push(this);
+    }
+
+    start() {
+        this.state = "recording";
+    }
+
+    stop() {
+        this.state = "inactive";
+        this.ondataavailable?.({ data: new Blob(["audio-bytes"], { type: "audio/webm" }) });
+        this.onstop?.();
+    }
+}
+
+beforeEach(() => {
+    MockMediaRecorder.instances = [];
+    Object.defineProperty(window.navigator, "mediaDevices", {
+        configurable: true,
+        value: {
+            getUserMedia: jest.fn(() =>
+                Promise.resolve({
+                    getTracks: () => [{ stop: jest.fn() }],
+                })
+            ),
+        },
+    });
+    window.MediaRecorder = MockMediaRecorder;
+    axios.post.mockReset();
+});
+
+test("records Bambara audio and automatically fills the claim text", async () => {
     axios.post.mockResolvedValueOnce({
         data: {
             text: "I ni ce",
@@ -42,9 +80,8 @@ test("transcribes Bambara audio and fills the claim text", async () => {
     });
     renderSubmitFact();
 
-    const audio = new File(["audio-bytes"], "claim.wav", { type: "audio/wav" });
-    await userEvent.upload(screen.getByLabelText(/fichier audio/i), audio);
-    await userEvent.click(screen.getByRole("button", { name: /transcrire l'audio/i }));
+    await userEvent.click(screen.getByRole("button", { name: /enregistrer en bambara/i }));
+    await userEvent.click(await screen.findByRole("button", { name: /arrêter l'enregistrement/i }));
 
     await waitFor(() => {
         expect(
@@ -75,4 +112,6 @@ test("transcribes Bambara audio and fills the claim text", async () => {
         }
     );
     expect(screen.getByText(/transcription bambara : i ni ce/i)).toBeInTheDocument();
+    expect(screen.queryByText(/choisir un fichier audio/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /transcrire l'audio/i })).not.toBeInTheDocument();
 });
