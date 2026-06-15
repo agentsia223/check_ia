@@ -52,13 +52,14 @@ function SubmitFact() {
     const audioChunksRef = useRef([]);
     const { getAccessToken, isLoggedIn } = useContext(AuthContext);
 
-    const handleSubmit = (e) => {
-        e.preventDefault();
-
+    const submitForVerification = (text) => {
         if (!isLoggedIn) {
             toast.error(
                 "Vous devez être connecté pour soumettre une information."
             );
+            return;
+        }
+        if (!text || !text.trim()) {
             return;
         }
 
@@ -72,7 +73,7 @@ function SubmitFact() {
         axios
             .post(
                 `${API_BASE_URL}submissions/`,
-                { texte, source },
+                { texte: text, source },
                 {
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
@@ -92,6 +93,11 @@ function SubmitFact() {
                     "Erreur lors de la soumission. Veuillez réessayer."
                 );
             });
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        submitForVerification(texte);
     };
 
     // Polling pour vérifier le statut

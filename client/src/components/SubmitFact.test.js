@@ -115,3 +115,29 @@ test("records Bambara audio and automatically fills the claim text", async () =>
     expect(screen.queryByText(/choisir un fichier audio/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /transcrire l'audio/i })).not.toBeInTheDocument();
 });
+
+test("manual submit posts the claim to the submissions endpoint", async () => {
+    axios.post.mockResolvedValueOnce({ data: { id: 7 } });
+    renderSubmitFact();
+
+    await userEvent.type(
+        screen.getByLabelText(/saisissez le texte/i),
+        "La terre est ronde"
+    );
+    await userEvent.click(
+        screen.getByRole("button", { name: /lancer la vérification/i })
+    );
+
+    await waitFor(() =>
+        expect(axios.post).toHaveBeenCalledWith(
+            `${API_BASE_URL}submissions/`,
+            { texte: "La terre est ronde", source: "" },
+            {
+                headers: {
+                    Authorization: "Bearer access-token",
+                    "Content-Type": "application/json",
+                },
+            }
+        )
+    );
+});
