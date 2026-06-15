@@ -5,6 +5,7 @@ import axios from "axios";
 import SubmitFact from "./SubmitFact";
 import { AuthContext } from "../utils/AuthContext";
 import { API_BASE_URL } from "../config";
+import { MIN_RECORDING_MS } from "../hooks/useBambaraVoiceVerify";
 
 jest.mock("axios");
 jest.mock("../utils/AuthContext", () => {
@@ -99,7 +100,7 @@ async function record(ms = 500) {
             screen.getByRole("button", { name: /enregistrer en bambara/i })
         );
     });
-    act(() => {
+    await act(async () => {
         jest.advanceTimersByTime(ms);
     });
     await act(async () => {
@@ -160,6 +161,9 @@ describe("Bambara speak-to-verify flow", () => {
 
         // Only the transcribe call happened — no translate, no submissions.
         expect(axios.post).toHaveBeenCalledTimes(1);
+        expect(
+            screen.queryByRole("button", { name: /annuler/i })
+        ).not.toBeInTheDocument();
     });
 
     test("does not verify when transcription fails", async () => {
@@ -184,6 +188,9 @@ describe("Bambara speak-to-verify flow", () => {
         await act(async () => {
             fireEvent.click(screen.getByRole("button", { name: /annuler/i }));
         });
+        expect(
+            screen.queryByRole("button", { name: /annuler/i })
+        ).not.toBeInTheDocument();
         await act(async () => {
             jest.advanceTimersByTime(3000);
         });
@@ -194,7 +201,7 @@ describe("Bambara speak-to-verify flow", () => {
     test("ignores a recording shorter than the minimum duration", async () => {
         renderSubmitFact();
 
-        await record(100); // below MIN_RECORDING_MS (400)
+        await record(MIN_RECORDING_MS - 1); // just below the minimum
 
         expect(axios.post).not.toHaveBeenCalled();
     });
@@ -212,7 +219,7 @@ describe("Bambara speak-to-verify flow", () => {
             screen.getByRole("button", { name: /arrêter l'enregistrement/i })
         ).toBeInTheDocument();
 
-        act(() => {
+        await act(async () => {
             jest.advanceTimersByTime(500);
         });
         await act(async () => {
