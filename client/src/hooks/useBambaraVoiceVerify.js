@@ -25,6 +25,8 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
     const countdownTimerRef = useRef(null);
     const verifyTimerRef = useRef(null);
     const processAudioRef = useRef(null);
+    const startPendingRef = useRef(false);
+    const stopRequestedRef = useRef(false);
 
     // Always call the latest callbacks so timers fired later use current state.
     const onTextRef = useRef(onText);
@@ -152,8 +154,18 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
             return;
         }
 
+        startPendingRef.current = true;
+        stopRequestedRef.current = false;
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            startPendingRef.current = false;
+            if (stopRequestedRef.current) {
+                stopRequestedRef.current = false;
+                stream.getTracks().forEach((track) => track.stop());
+                setPhase("idle");
+                return;
+            }
             const recorder = new MediaRecorder(stream);
             mediaStreamRef.current = stream;
             mediaRecorderRef.current = recorder;
@@ -189,6 +201,7 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
             recorder.start();
             setPhase("recording");
         } catch (error) {
+            startPendingRef.current = false;
             console.error("Erreur lors de l'enregistrement Bambara :", error);
             stopStream();
             setPhase("idle");
@@ -199,6 +212,10 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
     const stop = useCallback(() => {
         if (phase === "recording") {
             mediaRecorderRef.current?.stop();
+        } else if (startPendingRef.current) {
+            // Release happened before the mic stream resolved (fast tap on touch);
+            // tell the pending start() to abort instead of getting stuck recording.
+            stopRequestedRef.current = true;
         }
     }, [phase]);
 

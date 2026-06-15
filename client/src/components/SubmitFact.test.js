@@ -93,6 +93,18 @@ test("manual submit posts the claim to the submissions endpoint", async () => {
     );
 });
 
+function mockCoarsePointer() {
+    window.matchMedia = jest.fn().mockImplementation((query) => ({
+        matches: query === "(pointer: coarse)",
+        media: query,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn(),
+    }));
+}
+
 // Drives: start recording → record `ms` of (fake) time → stop.
 async function record(ms = 500) {
     await act(async () => {
@@ -117,6 +129,7 @@ describe("Bambara speak-to-verify flow", () => {
     afterEach(() => {
         jest.clearAllTimers();
         jest.useRealTimers();
+        delete window.matchMedia;
     });
 
     test("transcribes, translates, then auto-submits verification after the countdown", async () => {
@@ -242,5 +255,92 @@ describe("Bambara speak-to-verify flow", () => {
         expect(
             screen.getByRole("button", { name: /enregistrer en bambara/i })
         ).toBeInTheDocument();
+    });
+
+    test("touch: press-and-hold records, then auto-verifies on release", async () => {
+        mockCoarsePointer();
+        axios.post
+            .mockResolvedValueOnce({ data: { text: "I ni ce" } })
+            .mockResolvedValueOnce({ data: { translated_text: "Merci" } })
+            .mockResolvedValueOnce({ data: { id: 7 } });
+        renderSubmitFact();
+
+        const btn = screen.getByRole("button", { name: /maintenez pour parler/i });
+        await act(async () => {
+            fireEvent.pointerDown(btn);
+        });
+        await act(async () => {
+            jest.advanceTimersByTime(500);
+        });
+        await act(async () => {
+            fireEvent.pointerUp(btn);
+        });
+
+        expect(screen.getByLabelText(/saisissez le texte/i)).toHaveValue("Merci");
+
+        await act(async () => {
+            jest.advanceTimersByTime(3000);
+        });
+
+        expect(axios.post).toHaveBeenNthCalledWith(
+            3,
+            `${API_BASE_URL}submissions/`,
+            { texte: "Merci", source: "" },
+            {
+                headers: {
+                    Authorization: "Bearer access-token",
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+    });
+
+    test("touch: a fast tap (release before the mic resolves) does not get stuck recording", async () => {
+        mockCoarsePointer();
+        let resolveMedia;
+        const mediaPromise = new Promise((res) => {
+            resolveMedia = res;
+        });
+        navigator.mediaDevices.getUserMedia = jest.fn(() => mediaPromise);
+        renderSubmitFact();
+
+        const btn = screen.getByRole("button", { name: /maintenez pour parler/i });
+        await act(async () => {
+            fireEvent.pointerDown(btn); // start() begins, awaits the mic
+        });
+        await act(async () => {
+            fireEvent.pointerUp(btn); // release before the mic resolves
+        });
+        await act(async () => {
+            resolveMedia({ getTracks: () => [{ stop: jest.fn() }] }); // mic resolves now
+        });
+
+        // Not stuck recording: still idle label, and no transcription POST fired.
+        expect(
+            screen.getByRole("button", { name: /maintenez pour parler/i })
+        ).toBeInTheDocument();
+        expect(axios.post).not.toHaveBeenCalled();
+    });
+
+    test("Escape cancels the countdown before auto-verification", async () => {
+        axios.post
+            .mockResolvedValueOnce({ data: { text: "I ni ce" } })
+            .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
+        renderSubmitFact();
+
+        await record(500);
+        await act(async () => {
+            fireEvent.keyDown(document.body, { key: "Escape" });
+        });
+
+        expect(
+            screen.queryByRole("button", { name: /annuler/i })
+        ).not.toBeInTheDocument();
+
+        await act(async () => {
+            jest.advanceTimersByTime(3000);
+        });
+
+        expect(axios.post).toHaveBeenCalledTimes(2); // transcribe + translate only
     });
 });
