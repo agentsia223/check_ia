@@ -11,6 +11,11 @@ def _base_url():
     base_url = getattr(settings, "BAMBARA_API_BASE_URL", "").strip()
     if not base_url:
         raise RuntimeError("Bambara API is not configured")
+    # Tolerate a base URL configured without a scheme (e.g. a bare Railway
+    # host like "checkia-ml-api-production.up.railway.app"); requests raises
+    # MissingSchema otherwise, surfacing to users as a 502.
+    if "://" not in base_url:
+        base_url = "https://" + base_url
     return base_url.rstrip("/") + "/"
 
 
