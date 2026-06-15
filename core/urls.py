@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 from core.views import (
     FactViewSet, SubmissionViewSet, VerifiedMediaViewSet, KeywordViewSet,
     verify_image_content_view, detect_ai_image_view, get_image_verifications_view,
-    check_task_status_view
+    check_task_status_view, bambara_translate_view, bambara_transcribe_view
 )
 from core.services.deep_translator import get_facts_translated
 # from . import views
@@ -21,4 +21,6 @@ urlpatterns = [
     path('detect-ai-image/', detect_ai_image_view, name='detect_ai_image'),
     path('image-verifications/', get_image_verifications_view, name='get_image_verifications'),
     path('task-status/<str:task_id>/', check_task_status_view, name='check_task_status'),
+    path('bambara/translate/', bambara_translate_view, name='bambara_translate'),
+    path('bambara/transcribe/', bambara_transcribe_view, name='bambara_transcribe'),
 ]

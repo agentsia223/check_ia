@@ -77,6 +77,11 @@ SUPABASE_URL = os.environ['SUPABASE_URL']
 SUPABASE_ANON_KEY = os.getenv('SUPABASE_ANON_KEY')
 SUPABASE_SERVICE_ROLE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY')
 
+# Bambara voice and translation API
+BAMBARA_API_BASE_URL = os.getenv('BAMBARA_API_BASE_URL', '')
+BAMBARA_API_KEY = os.getenv('BAMBARA_API_KEY', '')
+BAMBARA_API_TIMEOUT = int(os.getenv('BAMBARA_API_TIMEOUT', '60'))
+
 
 # Configuration internationale
 LANGUAGE_CODE = 'en-us'

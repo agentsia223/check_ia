@@ -16,6 +16,7 @@ import json
 from .services.ai_analysis import analyze_text
 from .services.image_verification import verify_image_content, detect_ai_generated_image
 from .services.supabase_storage import upload_image_to_supabase, create_bucket_if_not_exists
+from .services.bambara_voice import translate_bambara_text, transcribe_bambara_audio
 import logging
 
 logger = logging.getLogger(__name__)
@@ -239,6 +240,65 @@ def supabase_user(request):
 
 def home(request):
     return HttpResponse("Hello, world. You're at the Check-IA API.")
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def bambara_translate_view(request):
+    """
+    Proxy Bambara/French/English translation requests to the configured ML API.
+    """
+    text = request.data.get('text', '')
+    source_lang = request.data.get('source_lang', 'bm')
+    target_lang = request.data.get('target_lang', 'fr')
+
+    if not text.strip():
+        return Response(
+            {"error": "Le texte ne peut pas être vide"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        return Response(
+            translate_bambara_text(text, source_lang, target_lang),
+            status=status.HTTP_200_OK,
+        )
+    except RuntimeError as exc:
+        response_status = (
+            status.HTTP_503_SERVICE_UNAVAILABLE
+            if "not configured" in str(exc)
+            else status.HTTP_502_BAD_GATEWAY
+        )
+        return Response({"error": str(exc)}, status=response_status)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def bambara_transcribe_view(request):
+    """
+    Proxy Bambara/French audio transcription requests to the configured ML API.
+    """
+    audio_file = request.FILES.get('file')
+    language = request.data.get('language', 'bm')
+
+    if audio_file is None:
+        return Response(
+            {"error": "Un fichier audio est requis"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        return Response(
+            transcribe_bambara_audio(audio_file, language),
+            status=status.HTTP_200_OK,
+        )
+    except RuntimeError as exc:
+        response_status = (
+            status.HTTP_503_SERVICE_UNAVAILABLE
+            if "not configured" in str(exc)
+            else status.HTTP_502_BAD_GATEWAY
+        )
+        return Response({"error": str(exc)}, status=response_status)
 
 
 @api_view(['POST'])
