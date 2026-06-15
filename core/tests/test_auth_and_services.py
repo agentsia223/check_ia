@@ -163,6 +163,19 @@ class BambaraVoiceServiceTest(TestCase):
         with self.assertRaisesRegex(RuntimeError, "Bambara API is not configured"):
             bambara_voice.translate_bambara_text("I ni ce", "bm", "fr")
 
+    @override_settings(BAMBARA_API_BASE_URL="checkia-ml-api-production.up.railway.app")
+    def test_base_url_without_scheme_defaults_to_https(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {"translated_text": "Merci"}
+
+        with patch("core.services.bambara_voice.requests.post", return_value=response) as post:
+            bambara_voice.translate_bambara_text("I ni ce", "bm", "fr")
+
+        self.assertEqual(
+            post.call_args.args[0],
+            "https://checkia-ml-api-production.up.railway.app/translate",
+        )
+
     @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app")
     def test_upstream_errors_are_sanitized(self):
         response = Mock(status_code=503, text="traceback with internals")
