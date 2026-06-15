@@ -10,7 +10,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from core.authentication import SimpleSupabaseUser, SupabaseAuthentication
 from core.middleware import SupabaseAuthMiddleware
 from core.models import Fact
-from core.services import keywords_extractor, pixel_analyzer, web_scraper
+from core.services import bambara_voice, keywords_extractor, pixel_analyzer, web_scraper
 from core.services.deep_translator import get_facts_translated
 
 
@@ -109,6 +109,67 @@ class SupabaseAuthMiddlewareTest(TestCase):
 
         self.assertIsNone(self.middleware.process_request(request))
         self.assertFalse(hasattr(request, "supabase_user"))
+
+
+class BambaraVoiceServiceTest(TestCase):
+    @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app/")
+    def test_translate_posts_to_translate_endpoint(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {
+            "translated_text": "Merci",
+            "source_lang": "bm",
+            "target_lang": "fr",
+            "model": "translation-model",
+        }
+
+        with patch("core.services.bambara_voice.requests.post", return_value=response) as post:
+            result = bambara_voice.translate_bambara_text("I ni ce", "bm", "fr")
+
+        self.assertEqual(result["translated_text"], "Merci")
+        post.assert_called_once_with(
+            "https://ml-api.railway.app/translate",
+            json={"text": "I ni ce", "source_lang": "bm", "target_lang": "fr"},
+            headers={},
+            timeout=60,
+        )
+
+    @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app", BAMBARA_API_KEY="secret")
+    def test_transcribe_posts_multipart_audio_with_optional_api_key(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {
+            "text": "I ni ce",
+            "language": "bm",
+            "duration_s": 2.4,
+            "model": "asr-model",
+        }
+        upload = SimpleNamespace(
+            name="claim.wav",
+            content_type="audio/wav",
+            read=Mock(return_value=b"audio-bytes"),
+        )
+
+        with patch("core.services.bambara_voice.requests.post", return_value=response) as post:
+            result = bambara_voice.transcribe_bambara_audio(upload, "bm")
+
+        self.assertEqual(result["text"], "I ni ce")
+        post.assert_called_once()
+        _, kwargs = post.call_args
+        self.assertEqual(kwargs["headers"], {"Authorization": "Bearer secret"})
+        self.assertEqual(kwargs["data"], {"language": "bm"})
+        self.assertEqual(kwargs["files"]["file"], ("claim.wav", b"audio-bytes", "audio/wav"))
+
+    @override_settings(BAMBARA_API_BASE_URL="")
+    def test_translate_requires_configured_base_url(self):
+        with self.assertRaisesRegex(RuntimeError, "Bambara API is not configured"):
+            bambara_voice.translate_bambara_text("I ni ce", "bm", "fr")
+
+    @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app")
+    def test_upstream_errors_are_sanitized(self):
+        response = Mock(status_code=503, text="traceback with internals")
+
+        with patch("core.services.bambara_voice.requests.post", return_value=response):
+            with self.assertRaisesRegex(RuntimeError, "Bambara API request failed"):
+                bambara_voice.translate_bambara_text("I ni ce", "bm", "fr")
 
 
 def test_extract_keywords_filters_tokens_and_entities(monkeypatch):

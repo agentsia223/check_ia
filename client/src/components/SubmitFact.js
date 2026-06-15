@@ -14,6 +14,7 @@ import {
     LinearProgress,
     Fade,
     Paper,
+    Stack,
 } from "@mui/material";
 import {
     FactCheck,
@@ -21,6 +22,8 @@ import {
     Warning,
     HourglassEmpty,
     Search,
+    Mic,
+    UploadFile,
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
 import Logo from "./brand/Logo";
@@ -42,6 +45,9 @@ function SubmitFact() {
     const [submissionId, setSubmissionId] = useState(null);
     const [webSources, setWebSources] = useState([]);
     const [detailedResult, setDetailedResult] = useState("");
+    const [audioFile, setAudioFile] = useState(null);
+    const [transcribing, setTranscribing] = useState(false);
+    const [bambaraTranscript, setBambaraTranscript] = useState("");
     const { getAccessToken, isLoggedIn } = useContext(AuthContext);
 
     const handleSubmit = (e) => {
@@ -130,6 +136,73 @@ function SubmitFact() {
             setStatus(null);
             setWebSources([]);
             setDetailedResult("");
+        }
+    };
+
+    const resetResultState = () => {
+        if (status) {
+            setStatus(null);
+            setWebSources([]);
+            setDetailedResult("");
+        }
+    };
+
+    const handleAudioChange = (e) => {
+        const file = e.target.files?.[0] || null;
+        setAudioFile(file);
+        setBambaraTranscript("");
+        resetResultState();
+    };
+
+    const handleTranscribeAudio = async () => {
+        if (!audioFile) {
+            toast.error("Veuillez choisir un fichier audio.");
+            return;
+        }
+
+        const accessToken = getAccessToken();
+        const formData = new FormData();
+        formData.append("file", audioFile);
+        formData.append("language", "bm");
+
+        setTranscribing(true);
+        try {
+            const transcriptionResponse = await axios.post(
+                `${API_BASE_URL}bambara/transcribe/`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "multipart/form-data",
+                    },
+                }
+            );
+            const transcript = transcriptionResponse.data.text || "";
+            setBambaraTranscript(transcript);
+
+            if (!transcript.trim()) {
+                toast.error("Aucune transcription n'a été détectée.");
+                return;
+            }
+
+            const translationResponse = await axios.post(
+                `${API_BASE_URL}bambara/translate/`,
+                { text: transcript, source_lang: "bm", target_lang: "fr" },
+                {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+            setTexte(translationResponse.data.translated_text || transcript);
+            resetResultState();
+            toast.success("Audio transcrit et traduit avec succès.");
+        } catch (error) {
+            console.error("Erreur lors de la transcription Bambara :", error);
+            toast.error("Impossible de transcrire cet audio. Veuillez réessayer.");
+        } finally {
+            setTranscribing(false);
         }
     };
 
@@ -315,6 +388,71 @@ function SubmitFact() {
                                     >
                                         Information à vérifier
                                     </Typography>
+                                    <Box
+                                        sx={{
+                                            mb: 3,
+                                            p: 3,
+                                            border: "1px solid var(--slate-200)",
+                                            borderRadius: "var(--radius-md)",
+                                            bgcolor: "var(--slate-50)",
+                                        }}
+                                    >
+                                        <Stack
+                                            direction={{ xs: "column", sm: "row" }}
+                                            spacing={2}
+                                            alignItems={{ xs: "stretch", sm: "center" }}
+                                        >
+                                            <Button
+                                                variant="outlined"
+                                                component="label"
+                                                startIcon={<UploadFile />}
+                                                sx={{
+                                                    minHeight: 44,
+                                                    borderRadius: "var(--radius-md)",
+                                                    borderColor: "var(--slate-300)",
+                                                    color: "var(--navy-700)",
+                                                    fontWeight: 600,
+                                                }}
+                                            >
+                                                Choisir un fichier audio
+                                                <input
+                                                    aria-label="Fichier audio Bambara"
+                                                    type="file"
+                                                    accept="audio/*"
+                                                    hidden
+                                                    onChange={handleAudioChange}
+                                                />
+                                            </Button>
+                                            <Button
+                                                variant="contained"
+                                                type="button"
+                                                startIcon={<Mic />}
+                                                disabled={!audioFile || transcribing || loading}
+                                                onClick={handleTranscribeAudio}
+                                                sx={{
+                                                    minHeight: 44,
+                                                    borderRadius: "var(--radius-md)",
+                                                    bgcolor: "var(--navy-600)",
+                                                    fontWeight: 600,
+                                                    "&:hover": {
+                                                        bgcolor: "var(--navy-700)",
+                                                    },
+                                                }}
+                                            >
+                                                {transcribing ? "Transcription..." : "Transcrire l'audio"}
+                                            </Button>
+                                        </Stack>
+                                        {audioFile && (
+                                            <Typography variant="body2" sx={{ mt: 2, color: "var(--slate-600)" }}>
+                                                Fichier sélectionné : {audioFile.name}
+                                            </Typography>
+                                        )}
+                                        {bambaraTranscript && (
+                                            <Typography variant="body2" sx={{ mt: 1, color: "var(--slate-600)" }}>
+                                                Transcription Bambara : {bambaraTranscript}
+                                            </Typography>
+                                        )}
+                                    </Box>
                                     <TextField
                                         label="Saisissez le texte, l'affirmation ou la déclaration à vérifier"
                                         multiline
