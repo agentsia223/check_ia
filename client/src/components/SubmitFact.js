@@ -53,6 +53,9 @@ function SubmitFact() {
             );
             return;
         }
+        if (loading) {
+            return;
+        }
         if (!text || !text.trim()) {
             return;
         }
@@ -346,6 +349,7 @@ function SubmitFact() {
                                         transcript={voice.transcript}
                                         countdown={voice.countdown}
                                         isTouch={voice.isTouch}
+                                        loading={loading}
                                         onToggle={voice.toggle}
                                         onStart={voice.start}
                                         onStop={voice.stop}

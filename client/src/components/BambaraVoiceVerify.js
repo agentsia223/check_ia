@@ -7,6 +7,7 @@ function BambaraVoiceVerify({
     transcript,
     countdown,
     isTouch,
+    loading,
     onToggle,
     onStart,
     onStop,
@@ -52,7 +53,7 @@ function BambaraVoiceVerify({
                 type="button"
                 fullWidth
                 startIcon={isRecording ? <StopCircle /> : <Mic />}
-                disabled={isBusy}
+                disabled={isBusy || loading}
                 {...pressHandlers}
                 sx={{
                     minHeight: 52,
