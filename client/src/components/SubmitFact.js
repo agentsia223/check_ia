@@ -237,8 +237,8 @@ function SubmitFact() {
     const voice = useVoiceDictation({
         getAccessToken,
         isLoggedIn,
-        language: claimLanguage,
-        enabled: inputMethod === "voice",
+        language: "bm",
+        enabled: claimLanguage === "bm" && inputMethod === "voice",
         onText: (text) => {
             setTexte(text);
             // French dictation is already French; only Bambara is a translation.
@@ -468,7 +468,7 @@ function SubmitFact() {
                                         Information à vérifier
                                     </Typography>
                                     <Typography variant="body2" sx={{ color: "var(--slate-600)", mb: 2 }}>
-                                        Choisissez la langue de votre affirmation, puis écrivez-la ou dictez-la.
+                                        Choisissez la langue, puis saisissez votre affirmation. La dictée vocale est disponible en bambara.
                                     </Typography>
 
                                     {/* Langue de l'affirmation (le parcours) */}
@@ -487,12 +487,13 @@ function SubmitFact() {
                                         </ToggleButton>
                                     </ToggleButtonGroup>
 
+                                    {claimLanguage === "bm" && (
                                     <Box sx={{ mb: 3 }}>
                                         <ToggleButtonGroup
                                             value={inputMethod}
                                             exclusive
                                             onChange={(e, mode) => mode && setInputMethod(mode)}
-                                            aria-label="Mode de saisie"
+                                            aria-label="Mode de saisie en bambara"
                                             sx={{ mb: 2, ...segmentedSx }}
                                         >
                                             <ToggleButton value="text" aria-label="Écrire">
@@ -505,7 +506,7 @@ function SubmitFact() {
 
                                         {inputMethod === "voice" && (
                                             <VoiceDictation
-                                                language={claimLanguage}
+                                                language="bm"
                                                 phase={voice.phase}
                                                 transcript={voice.transcript}
                                                 isTouch={voice.isTouch}
@@ -516,7 +517,7 @@ function SubmitFact() {
                                             />
                                         )}
 
-                                        {inputMethod === "text" && claimLanguage === "bm" && (
+                                        {inputMethod === "text" && (
                                             <Box>
                                                 <Typography
                                                     component="label"
@@ -565,6 +566,7 @@ function SubmitFact() {
                                             </Box>
                                         )}
                                     </Box>
+                                    )}
 
                                     <Typography
                                         component="label"
