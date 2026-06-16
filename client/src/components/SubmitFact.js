@@ -14,6 +14,8 @@ import {
     LinearProgress,
     Fade,
     Paper,
+    ToggleButton,
+    ToggleButtonGroup,
 } from "@mui/material";
 import {
     FactCheck,
@@ -21,6 +23,8 @@ import {
     Warning,
     HourglassEmpty,
     Search,
+    Keyboard,
+    Mic,
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
 import Logo from "./brand/Logo";
@@ -44,6 +48,7 @@ function SubmitFact() {
     const [submissionId, setSubmissionId] = useState(null);
     const [webSources, setWebSources] = useState([]);
     const [detailedResult, setDetailedResult] = useState("");
+    const [inputMode, setInputMode] = useState("text");
     const { getAccessToken, isLoggedIn } = useContext(AuthContext);
 
     const submitForVerification = (text) => {
@@ -155,11 +160,11 @@ function SubmitFact() {
     const voice = useBambaraVoiceVerify({
         getAccessToken,
         isLoggedIn,
+        enabled: inputMode === "voice",
         onText: (frenchText) => {
             setTexte(frenchText);
             resetResultState();
         },
-        onVerify: () => submitForVerification(texte),
     });
 
     // Function to get the display text for the result
@@ -340,23 +345,74 @@ function SubmitFact() {
                                 <Box sx={{ mb: 4 }}>
                                     <Typography
                                         variant="h6"
-                                        sx={{ fontFamily: "var(--font-display)", fontWeight: 600, color: "var(--navy-900)", mb: 2 }}
+                                        sx={{ fontFamily: "var(--font-display)", fontWeight: 600, color: "var(--navy-900)", mb: 0.5 }}
                                     >
                                         Information à vérifier
                                     </Typography>
-                                    <BambaraVoiceVerify
-                                        phase={voice.phase}
-                                        transcript={voice.transcript}
-                                        countdown={voice.countdown}
-                                        isTouch={voice.isTouch}
-                                        loading={loading}
-                                        onToggle={voice.toggle}
-                                        onStart={voice.start}
-                                        onStop={voice.stop}
-                                        onCancel={voice.cancel}
-                                    />
+                                    <Typography variant="body2" sx={{ color: "var(--slate-600)", mb: 2 }}>
+                                        Écrivez une affirmation ou dictez-la en Bambara pour lancer la vérification.
+                                    </Typography>
+
+                                    <ToggleButtonGroup
+                                        value={inputMode}
+                                        exclusive
+                                        onChange={(e, mode) => mode && setInputMode(mode)}
+                                        aria-label="Mode de saisie"
+                                        sx={{
+                                            mb: 3,
+                                            display: "inline-flex",
+                                            borderRadius: "var(--radius-md)",
+                                            border: "1px solid var(--slate-200)",
+                                            backgroundColor: "var(--slate-50)",
+                                            p: "4px",
+                                            "& .MuiToggleButtonGroup-grouped": {
+                                                border: 0,
+                                                borderRadius: "var(--radius-sm) !important",
+                                                px: 2.5,
+                                                py: 0.75,
+                                                gap: 1,
+                                                textTransform: "none",
+                                                fontWeight: 600,
+                                                color: "var(--slate-600)",
+                                                "&.Mui-selected": {
+                                                    backgroundColor: "#fff",
+                                                    color: "var(--navy-700)",
+                                                    boxShadow: "var(--shadow-xs)",
+                                                    "&:hover": { backgroundColor: "#fff" },
+                                                },
+                                            },
+                                        }}
+                                    >
+                                        <ToggleButton value="text" aria-label="Texte">
+                                            <Keyboard sx={{ fontSize: 18 }} /> Texte
+                                        </ToggleButton>
+                                        <ToggleButton value="voice" aria-label="Voix">
+                                            <Mic sx={{ fontSize: 18 }} /> Voix
+                                        </ToggleButton>
+                                    </ToggleButtonGroup>
+
+                                    {inputMode === "voice" && (
+                                        <BambaraVoiceVerify
+                                            phase={voice.phase}
+                                            transcript={voice.transcript}
+                                            isTouch={voice.isTouch}
+                                            loading={loading}
+                                            onToggle={voice.toggle}
+                                            onStart={voice.start}
+                                            onStop={voice.stop}
+                                        />
+                                    )}
+
+                                    <Typography
+                                        component="label"
+                                        htmlFor="claim-input"
+                                        sx={{ display: "block", fontWeight: 600, color: "var(--navy-900)", mb: 1 }}
+                                    >
+                                        Affirmation à vérifier
+                                    </Typography>
                                     <TextField
-                                        label="Saisissez le texte, l'affirmation ou la déclaration à vérifier"
+                                        id="claim-input"
+                                        placeholder="Exemple : Le gouvernement a annoncé une nouvelle mesure sur..."
                                         multiline
                                         rows={4}
                                         value={texte}
@@ -378,9 +434,6 @@ function SubmitFact() {
                                                     borderColor: "var(--navy-600)",
                                                 }
                                             },
-                                            "& label.Mui-focused": {
-                                                color: "var(--navy-600)",
-                                            }
                                         }}
                                     />
                                 </Box>
@@ -393,13 +446,13 @@ function SubmitFact() {
                                         Source (optionnel)
                                     </Typography>
                                     <TextField
-                                        label="URL de la source où vous avez trouvé cette information"
                                         type="url"
                                         value={source}
                                         onChange={(e) => setSource(e.target.value)}
                                         fullWidth
                                         variant="outlined"
-                                        placeholder="https://exemple.com/article"
+                                        placeholder="Collez le lien de la source, si vous en avez une"
+                                        inputProps={{ "aria-label": "Source (optionnel)" }}
                                         sx={{
                                             "& .MuiOutlinedInput-root": {
                                                 borderRadius: "var(--radius-md)",
@@ -422,34 +475,44 @@ function SubmitFact() {
                                     />
                                 </Box>
 
-                                <Button
-                                    variant="contained"
-                                    type="submit"
-                                    size="large"
-                                    disabled={loading || !texte.trim()}
-                                    startIcon={<Search />}
-                                    sx={{
-                                        py: 1.5,
-                                        px: 4,
-                                        minHeight: 48,
-                                        fontSize: "1.1rem",
-                                        fontWeight: 600,
-                                        borderRadius: "var(--radius-md)",
-                                        boxShadow: "var(--shadow-sm)",
-                                        bgcolor: "var(--green-500)",
-                                        color: "#fff",
-                                        "&:hover": {
-                                            bgcolor: "var(--green-600)",
+                                <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 2 }}>
+                                    <Button
+                                        variant="contained"
+                                        type="submit"
+                                        size="large"
+                                        disabled={loading || !texte.trim()}
+                                        startIcon={<Search />}
+                                        sx={{
+                                            py: 1.5,
+                                            px: 4,
+                                            minHeight: 48,
+                                            fontSize: "1.1rem",
+                                            fontWeight: 700,
+                                            borderRadius: "var(--radius-md)",
                                             boxShadow: "var(--shadow-md)",
-                                        },
-                                        "&:disabled": {
-                                            bgcolor: "var(--slate-300)",
                                             color: "#fff",
-                                        }
-                                    }}
-                                >
-                                    {loading ? "Vérification en cours..." : "Lancer la Vérification"}
-                                </Button>
+                                            background: "linear-gradient(140deg, var(--navy-500) 0%, #7c5ce6 100%)",
+                                            "&:hover": {
+                                                background: "linear-gradient(140deg, var(--navy-600) 0%, #6a49d6 100%)",
+                                                boxShadow: "var(--shadow-lg)",
+                                            },
+                                            "&:disabled": {
+                                                background: "var(--slate-300)",
+                                                color: "#fff",
+                                                boxShadow: "none",
+                                            }
+                                        }}
+                                    >
+                                        {loading ? "Vérification en cours..." : "Vérifier l'information"}
+                                    </Button>
+                                    <Typography
+                                        variant="body2"
+                                        sx={{ display: "flex", alignItems: "center", gap: 0.75, color: "var(--slate-500)" }}
+                                    >
+                                        <Verified sx={{ fontSize: 18, color: "var(--slate-400)" }} />
+                                        Ajoutez une affirmation ou utilisez l'enregistrement vocal pour lancer l'analyse.
+                                    </Typography>
+                                </Box>
                             </form>
                         </Paper>
 
