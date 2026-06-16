@@ -3,37 +3,34 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { API_BASE_URL } from "../config";
 
-export const REVIEW_SECONDS = 3;
 export const MIN_RECORDING_MS = 400;
 
-// Drives the Bambara voice → verify flow:
-// idle → recording → transcribing → review(countdown) → (verify) → idle
 /**
- * Bambara voice → auto-verify flow (idle → recording → transcribing → review → verify).
- * `getAccessToken`, `onText`, and `onVerify` may change each render — the latest is always
- * used. Prefer a stable `getAccessToken` to avoid needless keydown-listener re-subscription.
+ * Bambara voice dictation: record → transcribe (BM) → translate (BM→FR) → fill the
+ * claim field. It does NOT submit anything — the user reviews/edits the text and
+ * launches verification themselves.
+ *
+ * Phases: idle → recording → transcribing → idle.
+ *
+ * `getAccessToken` and `onText` may change each render; the latest is always used.
+ * Prefer a stable `getAccessToken` to avoid needless keydown-listener re-subscription.
  */
-export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVerify }) {
+export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, enabled = true }) {
     const [phase, setPhase] = useState("idle");
     const [transcript, setTranscript] = useState("");
-    const [countdown, setCountdown] = useState(null);
 
     const mediaRecorderRef = useRef(null);
     const mediaStreamRef = useRef(null);
     const audioChunksRef = useRef([]);
     const recordStartRef = useRef(0);
-    const countdownTimerRef = useRef(null);
-    const verifyTimerRef = useRef(null);
     const processAudioRef = useRef(null);
     const startPendingRef = useRef(false);
     const stopRequestedRef = useRef(false);
 
-    // Always call the latest callbacks so timers fired later use current state.
+    // Always call the latest onText so async completions use current state.
     const onTextRef = useRef(onText);
-    const onVerifyRef = useRef(onVerify);
     useEffect(() => {
         onTextRef.current = onText;
-        onVerifyRef.current = onVerify;
     });
 
     // Touch devices get press-and-hold; pointer devices get the spacebar toggle.
@@ -49,37 +46,6 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
             mediaStreamRef.current = null;
         }
     }, []);
-
-    const clearTimers = useCallback(() => {
-        if (countdownTimerRef.current) {
-            clearInterval(countdownTimerRef.current);
-            countdownTimerRef.current = null;
-        }
-        if (verifyTimerRef.current) {
-            clearTimeout(verifyTimerRef.current);
-            verifyTimerRef.current = null;
-        }
-    }, []);
-
-    const cancel = useCallback(() => {
-        clearTimers();
-        setCountdown(null);
-        setPhase("idle");
-    }, [clearTimers]);
-
-    const startCountdown = useCallback(() => {
-        setPhase("review");
-        setCountdown(REVIEW_SECONDS);
-        countdownTimerRef.current = setInterval(() => {
-            setCountdown((c) => (c && c > 1 ? c - 1 : c));
-        }, 1000);
-        verifyTimerRef.current = setTimeout(() => {
-            clearTimers();
-            setCountdown(null);
-            setPhase("idle");
-            onVerifyRef.current?.();
-        }, REVIEW_SECONDS * 1000);
-    }, [clearTimers]);
 
     const processAudio = useCallback(async (audioBlob) => {
         if (!audioBlob || audioBlob.size === 0) {
@@ -131,7 +97,10 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
             );
             const french = translationResponse.data.translated_text || transcriptText;
             onTextRef.current?.(french);
-            startCountdown();
+            setPhase("idle");
+            toast.success(
+                "Texte ajouté. Modifiez-le si besoin, puis lancez la vérification."
+            );
         } catch (error) {
             console.error("Erreur lors de la transcription Bambara :", error);
             const httpStatus = error?.response?.status;
@@ -154,7 +123,7 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
             toast.error(message);
             setPhase("idle");
         }
-    }, [getAccessToken, startCountdown]);
+    }, [getAccessToken]);
 
     useEffect(() => {
         processAudioRef.current = processAudio;
@@ -241,9 +210,9 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
         else if (phase === "idle") start();
     }, [phase, start, stop]);
 
-    // Desktop only: Space toggles recording (unless typing in a field); Escape cancels review.
+    // Desktop + voice mode only: Space toggles recording (unless typing in a field).
     useEffect(() => {
-        if (isTouch) return undefined;
+        if (isTouch || !enabled) return undefined;
         const onKeyDown = (e) => {
             if (e.code === "Space" || e.key === " ") {
                 const el = e.target;
@@ -253,21 +222,18 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, onVe
                     e.preventDefault();
                     toggle();
                 }
-            } else if (e.key === "Escape" && phase === "review") {
-                cancel();
             }
         };
         document.addEventListener("keydown", onKeyDown);
         return () => document.removeEventListener("keydown", onKeyDown);
-    }, [isTouch, phase, toggle, cancel]);
+    }, [isTouch, enabled, phase, toggle]);
 
     // Cleanup on unmount.
     useEffect(() => {
         return () => {
-            clearTimers();
             stopStream();
         };
-    }, [clearTimers, stopStream]);
+    }, [stopStream]);
 
-    return { phase, transcript, countdown, isTouch, start, stop, toggle, cancel };
+    return { phase, transcript, isTouch, start, stop, toggle };
 }

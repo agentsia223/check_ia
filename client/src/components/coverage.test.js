@@ -259,13 +259,13 @@ test("submit fact requires auth and posts claims for authenticated users", async
         </AuthContext.Provider>
     );
 
-    fireEvent.change(screen.getByLabelText(/saisissez le texte/i), {
+    fireEvent.change(screen.getByLabelText(/affirmation à vérifier/i), {
         target: { value: "Une affirmation à vérifier" },
     });
-    fireEvent.change(screen.getByPlaceholderText(/https:\/\/exemple.com\/article/i), {
+    fireEvent.change(screen.getByPlaceholderText(/collez le lien de la source/i), {
         target: { value: "https://source.test" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /lancer la vérification/i }));
+    fireEvent.click(screen.getByRole("button", { name: /vérifier l'information/i }));
 
     await waitFor(() => expect(axios.post).toHaveBeenCalled());
     expect(screen.getByTestId("toast-container")).toBeInTheDocument();
@@ -293,10 +293,10 @@ test("submit fact polls completed submissions and renders verified sources", asy
 
     renderWithAuth(<SubmitFact />);
 
-    fireEvent.change(screen.getByLabelText(/saisissez le texte/i), {
+    fireEvent.change(screen.getByLabelText(/affirmation à vérifier/i), {
         target: { value: "Une affirmation à vérifier" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /lancer la vérification/i }));
+    fireEvent.click(screen.getByRole("button", { name: /vérifier l'information/i }));
 
     await waitFor(() => expect(axios.post).toHaveBeenCalled());
     await waitFor(() => expect(axios.get).toHaveBeenCalled());
@@ -321,13 +321,13 @@ test("submit fact clears previous results when the claim changes and handles pol
 
     renderWithAuth(<SubmitFact />);
 
-    fireEvent.change(screen.getByLabelText(/saisissez le texte/i), {
+    fireEvent.change(screen.getByLabelText(/affirmation à vérifier/i), {
         target: { value: "Une affirmation douteuse" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /lancer la vérification/i }));
+    fireEvent.click(screen.getByRole("button", { name: /vérifier l'information/i }));
 
     await waitFor(() => expect(axios.post).toHaveBeenCalled());
-    fireEvent.change(screen.getByLabelText(/saisissez le texte/i), {
+    fireEvent.change(screen.getByLabelText(/affirmation à vérifier/i), {
         target: { value: "Une autre affirmation" },
     });
     await waitFor(() => expect(axios.get).toHaveBeenCalled());
