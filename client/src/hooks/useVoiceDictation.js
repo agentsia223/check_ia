@@ -6,8 +6,10 @@ import { API_BASE_URL } from "../config";
 export const MIN_RECORDING_MS = 400;
 
 /**
- * Bambara voice dictation: record → transcribe (BM) → translate (BM→FR) → fill the
- * claim field. It does NOT submit anything — the user reviews/edits the text and
+ * Voice dictation for a claim. Records, transcribes in `language`, and — for
+ * Bambara — translates the transcript to French, then fills the claim field via
+ * `onText`. French dictation skips the translation step (the transcript is the
+ * French claim). It does NOT submit anything — the user reviews/edits, then
  * launches verification themselves.
  *
  * Phases: idle → recording → transcribing → idle.
@@ -15,7 +17,7 @@ export const MIN_RECORDING_MS = 400;
  * `getAccessToken` and `onText` may change each render; the latest is always used.
  * Prefer a stable `getAccessToken` to avoid needless keydown-listener re-subscription.
  */
-export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, enabled = true }) {
+export function useVoiceDictation({ getAccessToken, isLoggedIn, language = "bm", onText, enabled = true }) {
     const [phase, setPhase] = useState("idle");
     const [transcript, setTranscript] = useState("");
 
@@ -27,10 +29,12 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, enab
     const startPendingRef = useRef(false);
     const stopRequestedRef = useRef(false);
 
-    // Always call the latest onText so async completions use current state.
+    // Always use the latest language / onText for async completions.
     const onTextRef = useRef(onText);
+    const languageRef = useRef(language);
     useEffect(() => {
         onTextRef.current = onText;
+        languageRef.current = language;
     });
 
     // Touch devices get press-and-hold; pointer devices get the spacebar toggle.
@@ -54,15 +58,16 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, enab
             return;
         }
 
+        const lang = languageRef.current;
         const accessToken = getAccessToken();
         const formData = new FormData();
         const audioFile = new File(
             [audioBlob],
-            `bambara-recording-${Date.now()}.webm`,
+            `dictation-${lang}-${Date.now()}.webm`,
             { type: audioBlob.type || "audio/webm" }
         );
         formData.append("file", audioFile);
-        formData.append("language", "bm");
+        formData.append("language", lang);
 
         setPhase("transcribing");
         try {
@@ -85,24 +90,29 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, enab
                 return;
             }
 
-            const translationResponse = await axios.post(
-                `${API_BASE_URL}bambara/translate/`,
-                { text: transcriptText, source_lang: "bm", target_lang: "fr" },
-                {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
-            const french = translationResponse.data.translated_text || transcriptText;
-            onTextRef.current?.(french);
+            // Bambara is translated to French; French is used as-is.
+            let frenchText = transcriptText;
+            if (lang === "bm") {
+                const translationResponse = await axios.post(
+                    `${API_BASE_URL}bambara/translate/`,
+                    { text: transcriptText, source_lang: "bm", target_lang: "fr" },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+                frenchText = translationResponse.data.translated_text || transcriptText;
+            }
+
+            onTextRef.current?.(frenchText);
             setPhase("idle");
             toast.success(
                 "Texte ajouté. Modifiez-le si besoin, puis lancez la vérification."
             );
         } catch (error) {
-            console.error("Erreur lors de la transcription Bambara :", error);
+            console.error("Erreur lors de la transcription vocale :", error);
             const httpStatus = error?.response?.status;
             const serverError = error?.response?.data?.error || "";
             let message;
@@ -178,7 +188,7 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, enab
             };
 
             recorder.onerror = (event) => {
-                console.error("Erreur du MediaRecorder Bambara :", event?.error || event);
+                console.error("Erreur du MediaRecorder :", event?.error || event);
                 stopStream();
                 setPhase("idle");
                 toast.error("Une erreur s'est produite pendant l'enregistrement.");
@@ -188,7 +198,7 @@ export function useBambaraVoiceVerify({ getAccessToken, isLoggedIn, onText, enab
             setPhase("recording");
         } catch (error) {
             startPendingRef.current = false;
-            console.error("Erreur lors de l'enregistrement Bambara :", error);
+            console.error("Erreur lors de l'enregistrement :", error);
             stopStream();
             setPhase("idle");
             toast.error("Impossible d'accéder au microphone.");

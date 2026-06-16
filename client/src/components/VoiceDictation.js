@@ -58,15 +58,18 @@ function Waveform({ active, flip }) {
     );
 }
 
-function BambaraVoiceVerify({
+function VoiceDictation({
     phase,
     transcript,
     isTouch,
     loading,
+    language = "bm",
     onToggle,
     onStart,
     onStop,
 }) {
+    const isBambara = language === "bm";
+    const langWord = isBambara ? "bambara" : "français";
     const isRecording = phase === "recording";
     const isTranscribing = phase === "transcribing";
     const disabled = isTranscribing || loading;
@@ -102,7 +105,7 @@ function BambaraVoiceVerify({
         statusPulse = true;
     }
 
-    const micAriaLabel = isRecording ? "Arrêter l'enregistrement" : "Enregistrer en Bambara";
+    const micAriaLabel = isRecording ? "Arrêter l'enregistrement" : `Enregistrer en ${langWord}`;
     const showRings = isRecording || !disabled;
 
     return (
@@ -125,7 +128,7 @@ function BambaraVoiceVerify({
                     color: "var(--navy-900)",
                 }}
             >
-                Dicter en Bambara
+                Dicter en {langWord}
             </Typography>
             <Typography
                 variant="body2"
@@ -225,16 +228,16 @@ function BambaraVoiceVerify({
                 </Typography>
             </Box>
 
-            {transcript && (
+            {isBambara && transcript && (
                 <Typography
                     variant="body2"
                     sx={{ mt: 1.5, color: "var(--slate-500)", fontStyle: "italic" }}
                 >
-                    Transcription Bambara : {transcript}
+                    Transcription bambara : {transcript}
                 </Typography>
             )}
         </Box>
     );
 }
 
-export default BambaraVoiceVerify;
+export default VoiceDictation;
