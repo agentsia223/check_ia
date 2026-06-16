@@ -5,7 +5,7 @@ import axios from "axios";
 import SubmitFact from "./SubmitFact";
 import { AuthContext } from "../utils/AuthContext";
 import { API_BASE_URL } from "../config";
-import { MIN_RECORDING_MS } from "../hooks/useBambaraVoiceVerify";
+import { MIN_RECORDING_MS } from "../hooks/useVoiceDictation";
 
 jest.mock("axios");
 jest.mock("../utils/AuthContext", () => {
@@ -92,6 +92,54 @@ test("manual submit posts the (French) claim to the submissions endpoint", async
     );
 });
 
+test("Bambara journey: the verdict is translated back to Bambara, with a toggle to French", async () => {
+    const intervalSpy = jest.spyOn(window, "setInterval").mockImplementation((cb) => {
+        cb();
+        return 1;
+    });
+    axios.post
+        .mockResolvedValueOnce({ data: { translated_text: "Le ciel est bleu" } }) // claim BM→FR
+        .mockResolvedValueOnce({ data: { id: 5 } }) // submit
+        .mockResolvedValueOnce({ data: { translated_text: "Sankolo ka blen tigi" } }); // result FR→BM
+    axios.get.mockResolvedValue({
+        data: {
+            statut: "vérifié",
+            web_sources: [],
+            detailed_result: "Le ciel est effectivement bleu.",
+        },
+    });
+
+    renderSubmitFact();
+
+    fireEvent.click(screen.getByRole("button", { name: /^bambara$/i }));
+    fireEvent.change(screen.getByLabelText(/votre affirmation en bambara/i), {
+        target: { value: "Sankolo ka blen" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /traduire en français/i }));
+    await waitFor(() =>
+        expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Le ciel est bleu")
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: VERIFY_BUTTON }));
+
+    // Verdict auto-shows in Bambara.
+    expect(await screen.findByText("Sankolo ka blen tigi")).toBeInTheDocument();
+    expect(
+        axios.post.mock.calls.some(
+            ([url, body]) =>
+                url === `${API_BASE_URL}bambara/translate/` &&
+                body.source_lang === "fr" &&
+                body.target_lang === "bm"
+        )
+    ).toBe(true);
+
+    // Toggle back to French.
+    fireEvent.click(screen.getByRole("button", { name: /résultat en français/i }));
+    expect(screen.getByText("Le ciel est effectivement bleu.")).toBeInTheDocument();
+
+    intervalSpy.mockRestore();
+});
+
 function mockCoarsePointer() {
     window.matchMedia = jest.fn().mockImplementation((query) => ({
         matches: query === "(pointer: coarse)",
@@ -104,26 +152,30 @@ function mockCoarsePointer() {
     }));
 }
 
-// Select the Bambara journey (defaults to the voice / "Parler" sub-mode).
-async function selectBambara() {
+async function selectLanguage(name) {
     await act(async () => {
-        fireEvent.click(screen.getByRole("button", { name: /^bambara$/i }));
+        fireEvent.click(screen.getByRole("button", { name }));
     });
 }
 
-// Select the Bambara journey, then its "Écrire" (text) sub-mode.
-async function selectBambaraText() {
-    await selectBambara();
+async function selectMethod(name) {
     await act(async () => {
-        fireEvent.click(screen.getByRole("button", { name: /^écrire$/i }));
+        fireEvent.click(screen.getByRole("button", { name }));
     });
 }
 
-// Bambara voice: select Bambara, start recording, record `ms` of fake time, then stop.
-async function record(ms = 500) {
-    await selectBambara();
+// Switch to the voice sub-mode for `language` (French is the default language).
+async function goVoice(language = "bm") {
+    if (language === "bm") await selectLanguage(/^bambara$/i);
+    await selectMethod(/^parler$/i);
+}
+
+// Voice dictation: switch to voice, record `ms` of fake time, then stop.
+async function record(ms = 500, language = "bm") {
+    await goVoice(language);
+    const micName = language === "bm" ? /enregistrer en bambara/i : /enregistrer en français/i;
     await act(async () => {
-        fireEvent.click(screen.getByRole("button", { name: /enregistrer en bambara/i }));
+        fireEvent.click(screen.getByRole("button", { name: micName }));
     });
     await act(async () => {
         jest.advanceTimersByTime(ms);
@@ -143,30 +195,33 @@ describe("Language journeys", () => {
         delete window.matchMedia;
     });
 
-    test("French is the default with a direct claim box; Bambara reveals voice + text", async () => {
+    test("French is the default; Bambara reveals a text box and voice", async () => {
         renderSubmitFact();
 
-        // French (default): a direct claim box, no Bambara sub-options, no mic.
+        // French + text (default): direct claim box, no mic, no Bambara box.
         expect(screen.getByLabelText(CLAIM_LABEL)).toBeInTheDocument();
-        expect(
-            screen.queryByRole("button", { name: /enregistrer en bambara/i })
-        ).not.toBeInTheDocument();
-        expect(screen.queryByRole("button", { name: /^parler$/i })).not.toBeInTheDocument();
-
-        await selectBambara();
-        expect(screen.getByRole("button", { name: /^parler$/i })).toBeInTheDocument();
         expect(screen.getByRole("button", { name: /^écrire$/i })).toBeInTheDocument();
-        // Voice is the default Bambara sub-mode → the dictation card shows.
+        expect(screen.getByRole("button", { name: /^parler$/i })).toBeInTheDocument();
+        expect(screen.queryByRole("button", { name: /enregistrer/i })).not.toBeInTheDocument();
+        expect(
+            screen.queryByLabelText(/votre affirmation en bambara/i)
+        ).not.toBeInTheDocument();
+
+        await selectLanguage(/^bambara$/i);
+        // Bambara + text (carried over): the Bambara input box shows.
+        expect(screen.getByLabelText(/votre affirmation en bambara/i)).toBeInTheDocument();
+
+        await selectMethod(/^parler$/i);
         expect(
             screen.getByRole("button", { name: /enregistrer en bambara/i })
         ).toBeInTheDocument();
         expect(screen.getByText(/dicter en bambara/i)).toBeInTheDocument();
     });
 
-    test("Bambara text: translating fills the French claim and shows a translated note", async () => {
+    test("Bambara text: translating fills the French claim and shows a note", async () => {
         axios.post.mockResolvedValueOnce({ data: { translated_text: "Bonjour" } });
         renderSubmitFact();
-        await selectBambaraText();
+        await selectLanguage(/^bambara$/i);
 
         await act(async () => {
             fireEvent.change(screen.getByLabelText(/votre affirmation en bambara/i), {
@@ -184,24 +239,34 @@ describe("Language journeys", () => {
             { text: "I ni ce", source_lang: "bm", target_lang: "fr" },
             JSON_HEADERS
         );
-        expect(axios.post).toHaveBeenCalledTimes(1); // translate only, no auto-submit
+        expect(axios.post).toHaveBeenCalledTimes(1);
     });
 
-    test("dictation fills the claim with the translation and does NOT submit", async () => {
+    test("Bambara voice fills the claim with the translation and does NOT submit", async () => {
         axios.post
             .mockResolvedValueOnce({ data: { text: "I ni ce" } })
             .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
         renderSubmitFact();
 
-        await record(500);
+        await record(500, "bm");
 
         expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Merci");
+        expect(screen.getByText(/traduit du bambara/i)).toBeInTheDocument();
         expect(axios.post).toHaveBeenCalledTimes(2); // transcribe + translate, no submit
+    });
 
-        await act(async () => {
-            jest.advanceTimersByTime(5000);
-        });
-        expect(axios.post).toHaveBeenCalledTimes(2);
+    test("French voice fills the claim directly (no translation, no note)", async () => {
+        axios.post.mockResolvedValueOnce({ data: { text: "La terre est ronde" } });
+        renderSubmitFact();
+
+        await record(500, "fr");
+
+        expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("La terre est ronde");
+        expect(axios.post).toHaveBeenCalledTimes(1); // transcribe only — no translation
+        expect(screen.queryByText(/traduit du bambara/i)).not.toBeInTheDocument();
+        // The transcribe call was made in French.
+        const [, formData] = axios.post.mock.calls[0];
+        expect(formData.get("language")).toBe("fr");
     });
 
     test("the user submits the dictated (and editable) text themselves", async () => {
@@ -211,7 +276,7 @@ describe("Language journeys", () => {
             .mockResolvedValueOnce({ data: { id: 42 } });
         renderSubmitFact();
 
-        await record(500);
+        await record(500, "bm");
         expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Merci");
 
         await act(async () => {
@@ -230,17 +295,17 @@ describe("Language journeys", () => {
         axios.post.mockResolvedValueOnce({ data: { text: "   " } });
         renderSubmitFact();
 
-        await record(500);
+        await record(500, "bm");
 
         expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("");
-        expect(axios.post).toHaveBeenCalledTimes(1); // transcribe only, no translate
+        expect(axios.post).toHaveBeenCalledTimes(1);
     });
 
     test("does not fill the claim when transcription fails", async () => {
         axios.post.mockRejectedValueOnce(new Error("network"));
         renderSubmitFact();
 
-        await record(500);
+        await record(500, "bm");
 
         expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("");
         expect(axios.post).toHaveBeenCalledTimes(1);
@@ -249,17 +314,17 @@ describe("Language journeys", () => {
     test("ignores a recording shorter than the minimum duration", async () => {
         renderSubmitFact();
 
-        await record(MIN_RECORDING_MS - 1); // just below the minimum
+        await record(MIN_RECORDING_MS - 1, "bm");
 
         expect(axios.post).not.toHaveBeenCalled();
     });
 
-    test("spacebar toggles recording in the Bambara voice journey", async () => {
+    test("spacebar toggles recording in the voice sub-mode", async () => {
         axios.post
             .mockResolvedValueOnce({ data: { text: "I ni ce" } })
             .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
         renderSubmitFact();
-        await selectBambara();
+        await goVoice("bm");
 
         await act(async () => {
             fireEvent.keyDown(document.body, { key: " ", code: "Space" });
@@ -278,8 +343,8 @@ describe("Language journeys", () => {
         expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Merci");
     });
 
-    test("spacebar does nothing in the French journey", async () => {
-        renderSubmitFact(); // French (default): voice is disabled
+    test("spacebar does nothing in a text sub-mode", async () => {
+        renderSubmitFact(); // French + text (default): voice disabled
 
         await act(async () => {
             fireEvent.keyDown(document.body, { key: " ", code: "Space" });
@@ -293,7 +358,7 @@ describe("Language journeys", () => {
 
     test("spacebar does not start recording while typing in the claim field", async () => {
         renderSubmitFact();
-        await selectBambara();
+        await goVoice("bm");
         const textarea = screen.getByLabelText(CLAIM_LABEL);
         textarea.focus();
 
@@ -310,7 +375,7 @@ describe("Language journeys", () => {
             .mockResolvedValueOnce({ data: { text: "I ni ce" } })
             .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
         renderSubmitFact();
-        await selectBambara();
+        await goVoice("bm");
 
         const btn = screen.getByRole("button", { name: /enregistrer en bambara/i });
         await act(async () => {
@@ -324,7 +389,7 @@ describe("Language journeys", () => {
         });
 
         expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Merci");
-        expect(axios.post).toHaveBeenCalledTimes(2); // no auto-submit
+        expect(axios.post).toHaveBeenCalledTimes(2);
     });
 
     test("touch: a fast tap (release before the mic resolves) does not get stuck recording", async () => {
@@ -335,21 +400,22 @@ describe("Language journeys", () => {
         });
         navigator.mediaDevices.getUserMedia = jest.fn(() => mediaPromise);
         renderSubmitFact();
-        await selectBambara();
+        await goVoice("bm");
 
         const btn = screen.getByRole("button", { name: /enregistrer en bambara/i });
         await act(async () => {
-            fireEvent.pointerDown(btn); // start() begins, awaits the mic
+            fireEvent.pointerDown(btn);
         });
         await act(async () => {
-            fireEvent.pointerUp(btn); // release before the mic resolves
+            fireEvent.pointerUp(btn);
         });
         await act(async () => {
-            resolveMedia({ getTracks: () => [{ stop: jest.fn() }] }); // mic resolves now
+            resolveMedia({ getTracks: () => [{ stop: jest.fn() }] });
         });
 
-        const mic = screen.getByRole("button", { name: /enregistrer en bambara/i });
-        expect(mic).not.toBeDisabled();
+        expect(
+            screen.getByRole("button", { name: /enregistrer en bambara/i })
+        ).not.toBeDisabled();
         expect(axios.post).not.toHaveBeenCalled();
     });
 });

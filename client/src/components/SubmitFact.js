@@ -31,8 +31,8 @@ import { AuthContext } from "../utils/AuthContext";
 import Logo from "./brand/Logo";
 import VerdictBadge from "./brand/VerdictBadge";
 import SourceCard from "./brand/SourceCard";
-import BambaraVoiceVerify from "./BambaraVoiceVerify";
-import { useBambaraVoiceVerify } from "../hooks/useBambaraVoiceVerify";
+import VoiceDictation from "./VoiceDictation";
+import { useVoiceDictation } from "../hooks/useVoiceDictation";
 
 // Fallback responses si aucune explication détaillée n'est disponible
 const fallbackResponses = {
@@ -50,10 +50,15 @@ function SubmitFact() {
     const [webSources, setWebSources] = useState([]);
     const [detailedResult, setDetailedResult] = useState("");
     const [claimLanguage, setClaimLanguage] = useState("fr");
-    const [bambaraInput, setBambaraInput] = useState("voice");
+    const [inputMethod, setInputMethod] = useState("text");
     const [bambaraText, setBambaraText] = useState("");
     const [translatedFromBambara, setTranslatedFromBambara] = useState(false);
     const [translating, setTranslating] = useState(false);
+    // Phase C: show the verdict translated back to Bambara for Bambara journeys.
+    const [submittedInBambara, setSubmittedInBambara] = useState(false);
+    const [resultLang, setResultLang] = useState("fr");
+    const [resultBambara, setResultBambara] = useState("");
+    const [translatingResult, setTranslatingResult] = useState(false);
     const { getAccessToken, isLoggedIn } = useContext(AuthContext);
 
     const submitForVerification = (text) => {
@@ -74,6 +79,10 @@ function SubmitFact() {
         setStatus(null);
         setWebSources([]);
         setDetailedResult("");
+        // Remember the journey so the result can be shown back in Bambara.
+        setSubmittedInBambara(claimLanguage === "bm");
+        setResultLang("fr");
+        setResultBambara("");
 
         const accessToken = getAccessToken();
 
@@ -225,19 +234,59 @@ function SubmitFact() {
         }
     };
 
-    const voice = useBambaraVoiceVerify({
+    const voice = useVoiceDictation({
         getAccessToken,
         isLoggedIn,
-        enabled: claimLanguage === "bm" && bambaraInput === "voice",
-        onText: (frenchText) => {
-            setTexte(frenchText);
-            setTranslatedFromBambara(true);
+        language: claimLanguage,
+        enabled: inputMethod === "voice",
+        onText: (text) => {
+            setTexte(text);
+            // French dictation is already French; only Bambara is a translation.
+            setTranslatedFromBambara(claimLanguage === "bm");
             resetResultState();
         },
     });
 
+    // Phase C: for Bambara journeys, translate the verdict back to Bambara once
+    // it arrives, and show it by default (the user can toggle back to French).
+    useEffect(() => {
+        if (!submittedInBambara || !detailedResult.trim() || resultBambara) return;
+        let cancelled = false;
+        setTranslatingResult(true);
+        (async () => {
+            try {
+                const accessToken = getAccessToken();
+                const response = await axios.post(
+                    `${API_BASE_URL}bambara/translate/`,
+                    { text: detailedResult, source_lang: "fr", target_lang: "bm" },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`,
+                            "Content-Type": "application/json",
+                        },
+                    }
+                );
+                if (!cancelled && response.data.translated_text) {
+                    setResultBambara(response.data.translated_text);
+                    setResultLang("bm");
+                }
+            } catch (error) {
+                console.error("Erreur lors de la traduction du résultat en bambara :", error);
+                // Keep the French result on failure.
+            } finally {
+                if (!cancelled) setTranslatingResult(false);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [submittedInBambara, detailedResult, resultBambara, getAccessToken]);
+
     // Function to get the display text for the result
     const getResultText = () => {
+        if (resultLang === "bm" && resultBambara.trim()) {
+            return resultBambara;
+        }
         if (detailedResult && detailedResult.trim()) {
             return detailedResult;
         }
@@ -419,7 +468,7 @@ function SubmitFact() {
                                         Information à vérifier
                                     </Typography>
                                     <Typography variant="body2" sx={{ color: "var(--slate-600)", mb: 2 }}>
-                                        Choisissez la langue de votre affirmation, puis saisissez-la (ou dictez-la en bambara).
+                                        Choisissez la langue de votre affirmation, puis écrivez-la ou dictez-la.
                                     </Typography>
 
                                     {/* Langue de l'affirmation (le parcours) */}
@@ -438,85 +487,84 @@ function SubmitFact() {
                                         </ToggleButton>
                                     </ToggleButtonGroup>
 
-                                    {claimLanguage === "bm" && (
-                                        <Box sx={{ mb: 3 }}>
-                                            <ToggleButtonGroup
-                                                value={bambaraInput}
-                                                exclusive
-                                                onChange={(e, mode) => mode && setBambaraInput(mode)}
-                                                aria-label="Mode de saisie en bambara"
-                                                sx={{ mb: 2, ...segmentedSx }}
-                                            >
-                                                <ToggleButton value="voice" aria-label="Parler">
-                                                    <Mic sx={{ fontSize: 18 }} /> Parler
-                                                </ToggleButton>
-                                                <ToggleButton value="text" aria-label="Écrire">
-                                                    <Keyboard sx={{ fontSize: 18 }} /> Écrire
-                                                </ToggleButton>
-                                            </ToggleButtonGroup>
+                                    <Box sx={{ mb: 3 }}>
+                                        <ToggleButtonGroup
+                                            value={inputMethod}
+                                            exclusive
+                                            onChange={(e, mode) => mode && setInputMethod(mode)}
+                                            aria-label="Mode de saisie"
+                                            sx={{ mb: 2, ...segmentedSx }}
+                                        >
+                                            <ToggleButton value="text" aria-label="Écrire">
+                                                <Keyboard sx={{ fontSize: 18 }} /> Écrire
+                                            </ToggleButton>
+                                            <ToggleButton value="voice" aria-label="Parler">
+                                                <Mic sx={{ fontSize: 18 }} /> Parler
+                                            </ToggleButton>
+                                        </ToggleButtonGroup>
 
-                                            {bambaraInput === "voice" && (
-                                                <BambaraVoiceVerify
-                                                    phase={voice.phase}
-                                                    transcript={voice.transcript}
-                                                    isTouch={voice.isTouch}
-                                                    loading={loading}
-                                                    onToggle={voice.toggle}
-                                                    onStart={voice.start}
-                                                    onStop={voice.stop}
-                                                />
-                                            )}
+                                        {inputMethod === "voice" && (
+                                            <VoiceDictation
+                                                language={claimLanguage}
+                                                phase={voice.phase}
+                                                transcript={voice.transcript}
+                                                isTouch={voice.isTouch}
+                                                loading={loading}
+                                                onToggle={voice.toggle}
+                                                onStart={voice.start}
+                                                onStop={voice.stop}
+                                            />
+                                        )}
 
-                                            {bambaraInput === "text" && (
-                                                <Box>
-                                                    <Typography
-                                                        component="label"
-                                                        htmlFor="bambara-input"
-                                                        sx={{ display: "block", fontWeight: 600, color: "var(--navy-900)", mb: 1 }}
-                                                    >
-                                                        Votre affirmation en bambara
-                                                    </Typography>
-                                                    <TextField
-                                                        id="bambara-input"
-                                                        placeholder="Sɛbɛn i ka kuma bamanankan na…"
-                                                        multiline
-                                                        rows={3}
-                                                        value={bambaraText}
-                                                        onChange={(e) => setBambaraText(e.target.value)}
-                                                        fullWidth
-                                                        variant="outlined"
-                                                        sx={{
-                                                            "& .MuiOutlinedInput-root": {
-                                                                borderRadius: "var(--radius-md)",
-                                                                backgroundColor: "var(--slate-50)",
-                                                                "& fieldset": { borderColor: "var(--slate-200)" },
-                                                                "&:hover fieldset": { borderColor: "var(--slate-300)" },
-                                                                "&.Mui-focused fieldset": { borderColor: "var(--navy-600)" },
-                                                            },
-                                                        }}
-                                                    />
-                                                    <Button
-                                                        type="button"
-                                                        onClick={translateBambaraText}
-                                                        disabled={translating || !bambaraText.trim()}
-                                                        startIcon={<Translate />}
-                                                        sx={{
-                                                            mt: 1.5,
-                                                            textTransform: "none",
-                                                            fontWeight: 700,
-                                                            color: "var(--navy-700)",
+                                        {inputMethod === "text" && claimLanguage === "bm" && (
+                                            <Box>
+                                                <Typography
+                                                    component="label"
+                                                    htmlFor="bambara-input"
+                                                    sx={{ display: "block", fontWeight: 600, color: "var(--navy-900)", mb: 1 }}
+                                                >
+                                                    Votre affirmation en bambara
+                                                </Typography>
+                                                <TextField
+                                                    id="bambara-input"
+                                                    placeholder="Sɛbɛn i ka kuma bamanankan na…"
+                                                    multiline
+                                                    rows={3}
+                                                    value={bambaraText}
+                                                    onChange={(e) => setBambaraText(e.target.value)}
+                                                    fullWidth
+                                                    variant="outlined"
+                                                    sx={{
+                                                        "& .MuiOutlinedInput-root": {
                                                             borderRadius: "var(--radius-md)",
-                                                            border: "1px solid var(--slate-200)",
-                                                            px: 2,
-                                                            "&:hover": { backgroundColor: "var(--navy-50)" },
-                                                        }}
-                                                    >
-                                                        {translating ? "Traduction…" : "Traduire en français"}
-                                                    </Button>
-                                                </Box>
-                                            )}
-                                        </Box>
-                                    )}
+                                                            backgroundColor: "var(--slate-50)",
+                                                            "& fieldset": { borderColor: "var(--slate-200)" },
+                                                            "&:hover fieldset": { borderColor: "var(--slate-300)" },
+                                                            "&.Mui-focused fieldset": { borderColor: "var(--navy-600)" },
+                                                        },
+                                                    }}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    onClick={translateBambaraText}
+                                                    disabled={translating || !bambaraText.trim()}
+                                                    startIcon={<Translate />}
+                                                    sx={{
+                                                        mt: 1.5,
+                                                        textTransform: "none",
+                                                        fontWeight: 700,
+                                                        color: "var(--navy-700)",
+                                                        borderRadius: "var(--radius-md)",
+                                                        border: "1px solid var(--slate-200)",
+                                                        px: 2,
+                                                        "&:hover": { backgroundColor: "var(--navy-50)" },
+                                                    }}
+                                                >
+                                                    {translating ? "Traduction…" : "Traduire en français"}
+                                                </Button>
+                                            </Box>
+                                        )}
+                                    </Box>
 
                                     <Typography
                                         component="label"
@@ -727,6 +775,34 @@ function SubmitFact() {
                                             }
                                         }}
                                     >
+                                        {submittedInBambara && (resultBambara || translatingResult) && (
+                                            <Box sx={{ mb: 1.5 }}>
+                                                {resultBambara ? (
+                                                    <ToggleButtonGroup
+                                                        value={resultLang}
+                                                        exclusive
+                                                        size="small"
+                                                        onChange={(e, lang) => lang && setResultLang(lang)}
+                                                        aria-label="Langue du résultat"
+                                                        sx={segmentedSx}
+                                                    >
+                                                        <ToggleButton value="fr" aria-label="Résultat en français">
+                                                            Français
+                                                        </ToggleButton>
+                                                        <ToggleButton value="bm" aria-label="Résultat en bambara">
+                                                            Bambara
+                                                        </ToggleButton>
+                                                    </ToggleButtonGroup>
+                                                ) : (
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{ color: "var(--slate-500)", display: "flex", alignItems: "center", gap: 0.75 }}
+                                                    >
+                                                        <Translate sx={{ fontSize: 16 }} /> Traduction du résultat en bambara…
+                                                    </Typography>
+                                                )}
+                                            </Box>
+                                        )}
                                         <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
                                             {getResultText()}
                                         </Typography>
