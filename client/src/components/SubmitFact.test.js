@@ -25,6 +25,9 @@ const renderSubmitFact = () =>
         </AuthContext.Provider>
     );
 
+const CLAIM_LABEL = /affirmation à vérifier/i;
+const VERIFY_BUTTON = /vérifier l'information/i;
+
 class MockMediaRecorder {
     static instances = [];
 
@@ -66,18 +69,12 @@ beforeEach(() => {
     });
 });
 
-
 test("manual submit posts the claim to the submissions endpoint", async () => {
     axios.post.mockResolvedValueOnce({ data: { id: 7 } });
     renderSubmitFact();
 
-    await userEvent.type(
-        screen.getByLabelText(/saisissez le texte/i),
-        "La terre est ronde"
-    );
-    await userEvent.click(
-        screen.getByRole("button", { name: /lancer la vérification/i })
-    );
+    await userEvent.type(screen.getByLabelText(CLAIM_LABEL), "La terre est ronde");
+    await userEvent.click(screen.getByRole("button", { name: VERIFY_BUTTON }));
 
     await waitFor(() =>
         expect(axios.post).toHaveBeenCalledWith(
@@ -105,24 +102,27 @@ function mockCoarsePointer() {
     }));
 }
 
-// Drives: start recording → record `ms` of (fake) time → stop.
-async function record(ms = 500) {
+async function switchToVoice() {
     await act(async () => {
-        fireEvent.click(
-            screen.getByRole("button", { name: /enregistrer en bambara/i })
-        );
+        fireEvent.click(screen.getByRole("button", { name: /^voix$/i }));
+    });
+}
+
+// Switch to voice mode, start recording, record `ms` of (fake) time, then stop.
+async function record(ms = 500) {
+    await switchToVoice();
+    await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: /enregistrer en bambara/i }));
     });
     await act(async () => {
         jest.advanceTimersByTime(ms);
     });
     await act(async () => {
-        fireEvent.click(
-            screen.getByRole("button", { name: /arrêter l'enregistrement/i })
-        );
+        fireEvent.click(screen.getByRole("button", { name: /arrêter l'enregistrement/i }));
     });
 }
 
-describe("Bambara speak-to-verify flow", () => {
+describe("Bambara voice dictation", () => {
     beforeEach(() => {
         jest.useFakeTimers();
     });
@@ -132,7 +132,41 @@ describe("Bambara speak-to-verify flow", () => {
         delete window.matchMedia;
     });
 
-    test("transcribes, translates, then auto-submits verification after the countdown", async () => {
+    test("the dictation card shows only in voice mode", async () => {
+        renderSubmitFact();
+
+        // Text mode (default): no mic.
+        expect(
+            screen.queryByRole("button", { name: /enregistrer en bambara/i })
+        ).not.toBeInTheDocument();
+
+        await switchToVoice();
+        expect(
+            screen.getByRole("button", { name: /enregistrer en bambara/i })
+        ).toBeInTheDocument();
+        expect(screen.getByText(/dicter en bambara/i)).toBeInTheDocument();
+    });
+
+    test("dictation fills the claim with the translation and does NOT submit", async () => {
+        axios.post
+            .mockResolvedValueOnce({ data: { text: "I ni ce" } })
+            .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
+        renderSubmitFact();
+
+        await record(500);
+
+        expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Merci");
+        // transcribe + translate only — no submission fired automatically.
+        expect(axios.post).toHaveBeenCalledTimes(2);
+
+        // Let time pass — still no auto-submit.
+        await act(async () => {
+            jest.advanceTimersByTime(5000);
+        });
+        expect(axios.post).toHaveBeenCalledTimes(2);
+    });
+
+    test("the user submits the dictated (and editable) text themselves", async () => {
         axios.post
             .mockResolvedValueOnce({ data: { text: "I ni ce" } })
             .mockResolvedValueOnce({ data: { translated_text: "Merci" } })
@@ -140,14 +174,10 @@ describe("Bambara speak-to-verify flow", () => {
         renderSubmitFact();
 
         await record(500);
+        expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Merci");
 
-        // Translated text fills the claim field; verification has NOT fired yet.
-        expect(screen.getByLabelText(/saisissez le texte/i)).toHaveValue("Merci");
-        expect(axios.post).toHaveBeenCalledTimes(2);
-
-        // Countdown elapses → auto-verify.
         await act(async () => {
-            jest.advanceTimersByTime(3000);
+            fireEvent.click(screen.getByRole("button", { name: VERIFY_BUTTON }));
         });
 
         expect(axios.post).toHaveBeenNthCalledWith(
@@ -163,52 +193,24 @@ describe("Bambara speak-to-verify flow", () => {
         );
     });
 
-    test("does not verify when the transcription is empty", async () => {
+    test("does not fill the claim when the transcription is empty", async () => {
         axios.post.mockResolvedValueOnce({ data: { text: "   " } });
         renderSubmitFact();
 
         await record(500);
-        await act(async () => {
-            jest.advanceTimersByTime(3000);
-        });
 
-        // Only the transcribe call happened — no translate, no submissions.
-        expect(axios.post).toHaveBeenCalledTimes(1);
-        expect(
-            screen.queryByRole("button", { name: /annuler/i })
-        ).not.toBeInTheDocument();
+        expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("");
+        expect(axios.post).toHaveBeenCalledTimes(1); // transcribe only, no translate
     });
 
-    test("does not verify when transcription fails", async () => {
-        axios.post.mockRejectedValueOnce(new Error("502"));
+    test("does not fill the claim when transcription fails", async () => {
+        axios.post.mockRejectedValueOnce(new Error("network"));
         renderSubmitFact();
 
         await record(500);
-        await act(async () => {
-            jest.advanceTimersByTime(3000);
-        });
 
+        expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("");
         expect(axios.post).toHaveBeenCalledTimes(1);
-    });
-
-    test("cancelling the countdown prevents auto-verification", async () => {
-        axios.post
-            .mockResolvedValueOnce({ data: { text: "I ni ce" } })
-            .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
-        renderSubmitFact();
-
-        await record(500);
-        await act(async () => {
-            fireEvent.click(screen.getByRole("button", { name: /annuler/i }));
-        });
-        expect(
-            screen.queryByRole("button", { name: /annuler/i })
-        ).not.toBeInTheDocument();
-        await act(async () => {
-            jest.advanceTimersByTime(3000);
-        });
-
-        expect(axios.post).toHaveBeenCalledTimes(2); // transcribe + translate only
     });
 
     test("ignores a recording shorter than the minimum duration", async () => {
@@ -219,11 +221,12 @@ describe("Bambara speak-to-verify flow", () => {
         expect(axios.post).not.toHaveBeenCalled();
     });
 
-    test("spacebar toggles recording on desktop", async () => {
+    test("spacebar toggles recording in voice mode", async () => {
         axios.post
             .mockResolvedValueOnce({ data: { text: "I ni ce" } })
             .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
         renderSubmitFact();
+        await switchToVoice();
 
         await act(async () => {
             fireEvent.keyDown(document.body, { key: " ", code: "Space" });
@@ -239,12 +242,26 @@ describe("Bambara speak-to-verify flow", () => {
             fireEvent.keyDown(document.body, { key: " ", code: "Space" });
         });
 
-        expect(screen.getByLabelText(/saisissez le texte/i)).toHaveValue("Merci");
+        expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Merci");
     });
 
-    test("spacebar does not start recording while typing in the claim field", () => {
+    test("spacebar does nothing in text mode", async () => {
+        renderSubmitFact(); // text mode (default)
+
+        await act(async () => {
+            fireEvent.keyDown(document.body, { key: " ", code: "Space" });
+        });
+
+        expect(
+            screen.queryByRole("button", { name: /arrêter l'enregistrement/i })
+        ).not.toBeInTheDocument();
+        expect(axios.post).not.toHaveBeenCalled();
+    });
+
+    test("spacebar does not start recording while typing in the claim field", async () => {
         renderSubmitFact();
-        const textarea = screen.getByLabelText(/saisissez le texte/i);
+        await switchToVoice();
+        const textarea = screen.getByLabelText(CLAIM_LABEL);
         textarea.focus();
 
         fireEvent.keyDown(textarea, { key: " ", code: "Space" });
@@ -252,20 +269,17 @@ describe("Bambara speak-to-verify flow", () => {
         expect(
             screen.queryByRole("button", { name: /arrêter l'enregistrement/i })
         ).not.toBeInTheDocument();
-        expect(
-            screen.getByRole("button", { name: /enregistrer en bambara/i })
-        ).toBeInTheDocument();
     });
 
-    test("touch: press-and-hold records, then auto-verifies on release", async () => {
+    test("touch: press-and-hold dictates and fills the claim", async () => {
         mockCoarsePointer();
         axios.post
             .mockResolvedValueOnce({ data: { text: "I ni ce" } })
-            .mockResolvedValueOnce({ data: { translated_text: "Merci" } })
-            .mockResolvedValueOnce({ data: { id: 7 } });
+            .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
         renderSubmitFact();
+        await switchToVoice();
 
-        const btn = screen.getByRole("button", { name: /maintenez pour parler/i });
+        const btn = screen.getByRole("button", { name: /enregistrer en bambara/i });
         await act(async () => {
             fireEvent.pointerDown(btn);
         });
@@ -276,23 +290,8 @@ describe("Bambara speak-to-verify flow", () => {
             fireEvent.pointerUp(btn);
         });
 
-        expect(screen.getByLabelText(/saisissez le texte/i)).toHaveValue("Merci");
-
-        await act(async () => {
-            jest.advanceTimersByTime(3000);
-        });
-
-        expect(axios.post).toHaveBeenNthCalledWith(
-            3,
-            `${API_BASE_URL}submissions/`,
-            { texte: "Merci", source: "" },
-            {
-                headers: {
-                    Authorization: "Bearer access-token",
-                    "Content-Type": "application/json",
-                },
-            }
-        );
+        expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Merci");
+        expect(axios.post).toHaveBeenCalledTimes(2); // no auto-submit
     });
 
     test("touch: a fast tap (release before the mic resolves) does not get stuck recording", async () => {
@@ -303,8 +302,9 @@ describe("Bambara speak-to-verify flow", () => {
         });
         navigator.mediaDevices.getUserMedia = jest.fn(() => mediaPromise);
         renderSubmitFact();
+        await switchToVoice();
 
-        const btn = screen.getByRole("button", { name: /maintenez pour parler/i });
+        const btn = screen.getByRole("button", { name: /enregistrer en bambara/i });
         await act(async () => {
             fireEvent.pointerDown(btn); // start() begins, awaits the mic
         });
@@ -315,32 +315,9 @@ describe("Bambara speak-to-verify flow", () => {
             resolveMedia({ getTracks: () => [{ stop: jest.fn() }] }); // mic resolves now
         });
 
-        // Not stuck recording: still idle label, and no transcription POST fired.
-        expect(
-            screen.getByRole("button", { name: /maintenez pour parler/i })
-        ).toBeInTheDocument();
+        // Not stuck recording: mic stays idle, no transcription POST fired.
+        const mic = screen.getByRole("button", { name: /enregistrer en bambara/i });
+        expect(mic).not.toBeDisabled();
         expect(axios.post).not.toHaveBeenCalled();
-    });
-
-    test("Escape cancels the countdown before auto-verification", async () => {
-        axios.post
-            .mockResolvedValueOnce({ data: { text: "I ni ce" } })
-            .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
-        renderSubmitFact();
-
-        await record(500);
-        await act(async () => {
-            fireEvent.keyDown(document.body, { key: "Escape" });
-        });
-
-        expect(
-            screen.queryByRole("button", { name: /annuler/i })
-        ).not.toBeInTheDocument();
-
-        await act(async () => {
-            jest.advanceTimersByTime(3000);
-        });
-
-        expect(axios.post).toHaveBeenCalledTimes(2); // transcribe + translate only
     });
 });
