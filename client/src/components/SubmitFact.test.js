@@ -98,7 +98,6 @@ test("Bambara journey: the verdict is translated back to Bambara, with a toggle 
         return 1;
     });
     axios.post
-        .mockResolvedValueOnce({ data: { translated_text: "Le ciel est bleu" } }) // claim BM→FR
         .mockResolvedValueOnce({ data: { id: 5 } }) // submit
         .mockResolvedValueOnce({ data: { translated_text: "Sankolo ka blen tigi" } }); // result FR→BM
     axios.get.mockResolvedValue({
@@ -111,14 +110,11 @@ test("Bambara journey: the verdict is translated back to Bambara, with a toggle 
 
     renderSubmitFact();
 
+    // Bambara journey; the (editable, French) claim is filled directly here.
     fireEvent.click(screen.getByRole("button", { name: /^bambara$/i }));
-    fireEvent.change(screen.getByLabelText(/votre affirmation en bambara/i), {
-        target: { value: "Sankolo ka blen" },
+    fireEvent.change(screen.getByLabelText(CLAIM_LABEL), {
+        target: { value: "Le ciel est bleu" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /traduire en français/i }));
-    await waitFor(() =>
-        expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Le ciel est bleu")
-    );
 
     fireEvent.click(screen.getByRole("button", { name: VERIFY_BUTTON }));
 
@@ -158,16 +154,9 @@ async function selectLanguage(name) {
     });
 }
 
-async function selectMethod(name) {
-    await act(async () => {
-        fireEvent.click(screen.getByRole("button", { name }));
-    });
-}
-
-// Switch to the Bambara voice sub-mode (voice is Bambara-only).
+// Switch to the Bambara journey (voice-only).
 async function goVoice() {
     await selectLanguage(/^bambara$/i);
-    await selectMethod(/^parler$/i);
 }
 
 // Bambara voice dictation: switch to voice, record `ms` of fake time, then stop.
@@ -194,52 +183,26 @@ describe("Language journeys", () => {
         delete window.matchMedia;
     });
 
-    test("French is text-only; Bambara reveals the text + voice sub-toggle", async () => {
+    test("French is text-only; Bambara goes straight to the voice card", async () => {
         renderSubmitFact();
 
-        // French (default): a direct claim box, no input-method sub-toggle, no mic.
+        // French (default): a direct claim box, no mic, no sub-toggle.
         expect(screen.getByLabelText(CLAIM_LABEL)).toBeInTheDocument();
+        expect(
+            screen.queryByRole("button", { name: /enregistrer en bambara/i })
+        ).not.toBeInTheDocument();
+
+        await selectLanguage(/^bambara$/i);
+        // Bambara: the dictation card shows directly — no Écrire/Parler, no text box.
+        expect(
+            screen.getByRole("button", { name: /enregistrer en bambara/i })
+        ).toBeInTheDocument();
+        expect(screen.getByText(/dicter en bambara/i)).toBeInTheDocument();
         expect(screen.queryByRole("button", { name: /^écrire$/i })).not.toBeInTheDocument();
         expect(screen.queryByRole("button", { name: /^parler$/i })).not.toBeInTheDocument();
         expect(
             screen.queryByLabelText(/votre affirmation en bambara/i)
         ).not.toBeInTheDocument();
-
-        await selectLanguage(/^bambara$/i);
-        // Bambara: the sub-toggle appears; text (default) shows the Bambara box.
-        expect(screen.getByRole("button", { name: /^écrire$/i })).toBeInTheDocument();
-        expect(screen.getByRole("button", { name: /^parler$/i })).toBeInTheDocument();
-        expect(screen.getByLabelText(/votre affirmation en bambara/i)).toBeInTheDocument();
-
-        await selectMethod(/^parler$/i);
-        expect(
-            screen.getByRole("button", { name: /enregistrer en bambara/i })
-        ).toBeInTheDocument();
-        expect(screen.getByText(/dicter en bambara/i)).toBeInTheDocument();
-    });
-
-    test("Bambara text: translating fills the French claim and shows a note", async () => {
-        axios.post.mockResolvedValueOnce({ data: { translated_text: "Bonjour" } });
-        renderSubmitFact();
-        await selectLanguage(/^bambara$/i);
-
-        await act(async () => {
-            fireEvent.change(screen.getByLabelText(/votre affirmation en bambara/i), {
-                target: { value: "I ni ce" },
-            });
-        });
-        await act(async () => {
-            fireEvent.click(screen.getByRole("button", { name: /traduire en français/i }));
-        });
-
-        expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Bonjour");
-        expect(screen.getByText(/traduit du bambara/i)).toBeInTheDocument();
-        expect(axios.post).toHaveBeenCalledWith(
-            `${API_BASE_URL}bambara/translate/`,
-            { text: "I ni ce", source_lang: "bm", target_lang: "fr" },
-            JSON_HEADERS
-        );
-        expect(axios.post).toHaveBeenCalledTimes(1);
     });
 
     test("Bambara voice fills the claim with the translation and does NOT submit", async () => {
