@@ -12,6 +12,7 @@ import {
     Alert,
     Grid,
     LinearProgress,
+    CircularProgress,
     Fade,
     Paper,
     ToggleButton,
@@ -53,7 +54,6 @@ function SubmitFact() {
     const [submittedInBambara, setSubmittedInBambara] = useState(false);
     const [resultLang, setResultLang] = useState("fr");
     const [resultBambara, setResultBambara] = useState("");
-    const [translatingResult, setTranslatingResult] = useState(false);
     const { getAccessToken, isLoggedIn } = useContext(AuthContext);
 
     const submitForVerification = (text) => {
@@ -76,7 +76,7 @@ function SubmitFact() {
         setDetailedResult("");
         // Remember the journey so the result can be shown back in Bambara.
         setSubmittedInBambara(claimLanguage === "bm");
-        setResultLang("fr");
+        setResultLang(claimLanguage === "bm" ? "bm" : "fr");
         setResultBambara("");
 
         const accessToken = getAccessToken();
@@ -213,12 +213,15 @@ function SubmitFact() {
         },
     });
 
-    // Phase C: for Bambara journeys, translate the verdict back to Bambara once
-    // it arrives, and show it by default (the user can toggle back to French).
+    // Phase C: for Bambara journeys, translate the FINAL verdict to Bambara and
+    // show it by default. Gated on a terminal status so we never translate the
+    // backend's "analyse en cours" placeholder (which would get cached and shown).
     useEffect(() => {
-        if (!submittedInBambara || !detailedResult.trim() || resultBambara) return;
+        const resultIsFinal = status && status !== "en cours" && !loading;
+        if (!submittedInBambara || !resultIsFinal || !detailedResult.trim() || resultBambara) {
+            return;
+        }
         let cancelled = false;
-        setTranslatingResult(true);
         (async () => {
             try {
                 const accessToken = getAccessToken();
@@ -234,19 +237,17 @@ function SubmitFact() {
                 );
                 if (!cancelled && response.data.translated_text) {
                     setResultBambara(response.data.translated_text);
-                    setResultLang("bm");
                 }
             } catch (error) {
                 console.error("Erreur lors de la traduction du résultat en bambara :", error);
-                // Keep the French result on failure.
-            } finally {
-                if (!cancelled) setTranslatingResult(false);
+                // Translation failed — fall back to the French verdict.
+                if (!cancelled) setResultLang("fr");
             }
         })();
         return () => {
             cancelled = true;
         };
-    }, [submittedInBambara, detailedResult, resultBambara, getAccessToken]);
+    }, [submittedInBambara, detailedResult, status, loading, resultBambara, getAccessToken]);
 
     // Function to get the display text for the result
     const getResultText = () => {
@@ -675,37 +676,49 @@ function SubmitFact() {
                                             }
                                         }}
                                     >
-                                        {submittedInBambara && (resultBambara || translatingResult) && (
-                                            <Box sx={{ mb: 1.5 }}>
-                                                {resultBambara ? (
-                                                    <ToggleButtonGroup
-                                                        value={resultLang}
-                                                        exclusive
-                                                        size="small"
-                                                        onChange={(e, lang) => lang && setResultLang(lang)}
-                                                        aria-label="Langue du résultat"
-                                                        sx={segmentedSx}
-                                                    >
-                                                        <ToggleButton value="fr" aria-label="Résultat en français">
-                                                            Français
-                                                        </ToggleButton>
-                                                        <ToggleButton value="bm" aria-label="Résultat en bambara">
-                                                            Bambara
-                                                        </ToggleButton>
-                                                    </ToggleButtonGroup>
-                                                ) : (
-                                                    <Typography
-                                                        variant="body2"
-                                                        sx={{ color: "var(--slate-500)", display: "flex", alignItems: "center", gap: 0.75 }}
-                                                    >
-                                                        <Translate sx={{ fontSize: 16 }} /> Traduction du résultat en bambara…
-                                                    </Typography>
-                                                )}
+                                        {submittedInBambara && resultLang === "bm" && !resultBambara ? (
+                                            // Bambara journey: wait for the verdict's Bambara translation
+                                            // instead of flashing the French text.
+                                            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+                                                <CircularProgress size={18} sx={{ color: "var(--navy-600)" }} />
+                                                <Typography variant="body1">
+                                                    Traduction du résultat en bambara…
+                                                </Typography>
+                                                <Button
+                                                    type="button"
+                                                    size="small"
+                                                    onClick={() => setResultLang("fr")}
+                                                    sx={{ textTransform: "none", color: "var(--navy-700)", fontWeight: 700, ml: "auto" }}
+                                                >
+                                                    Voir en français
+                                                </Button>
                                             </Box>
+                                        ) : (
+                                            <>
+                                                {submittedInBambara && resultBambara && (
+                                                    <Box sx={{ mb: 1.5 }}>
+                                                        <ToggleButtonGroup
+                                                            value={resultLang}
+                                                            exclusive
+                                                            size="small"
+                                                            onChange={(e, lang) => lang && setResultLang(lang)}
+                                                            aria-label="Langue du résultat"
+                                                            sx={segmentedSx}
+                                                        >
+                                                            <ToggleButton value="fr" aria-label="Résultat en français">
+                                                                Français
+                                                            </ToggleButton>
+                                                            <ToggleButton value="bm" aria-label="Résultat en bambara">
+                                                                Bambara
+                                                            </ToggleButton>
+                                                        </ToggleButtonGroup>
+                                                    </Box>
+                                                )}
+                                                <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
+                                                    {getResultText()}
+                                                </Typography>
+                                            </>
                                         )}
-                                        <Typography variant="body1" sx={{ lineHeight: 1.6 }}>
-                                            {getResultText()}
-                                        </Typography>
                                     </Alert>
                                 </Paper>
                             </Fade>
