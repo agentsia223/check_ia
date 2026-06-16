@@ -25,6 +25,7 @@ import {
     Search,
     Keyboard,
     Mic,
+    Translate,
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
 import Logo from "./brand/Logo";
@@ -48,7 +49,11 @@ function SubmitFact() {
     const [submissionId, setSubmissionId] = useState(null);
     const [webSources, setWebSources] = useState([]);
     const [detailedResult, setDetailedResult] = useState("");
-    const [inputMode, setInputMode] = useState("text");
+    const [claimLanguage, setClaimLanguage] = useState("fr");
+    const [bambaraInput, setBambaraInput] = useState("voice");
+    const [bambaraText, setBambaraText] = useState("");
+    const [translatedFromBambara, setTranslatedFromBambara] = useState(false);
+    const [translating, setTranslating] = useState(false);
     const { getAccessToken, isLoggedIn } = useContext(AuthContext);
 
     const submitForVerification = (text) => {
@@ -157,12 +162,76 @@ function SubmitFact() {
         }
     };
 
+    // Shared look for the segmented (toggle) controls.
+    const segmentedSx = {
+        display: "inline-flex",
+        borderRadius: "var(--radius-md)",
+        border: "1px solid var(--slate-200)",
+        backgroundColor: "var(--slate-50)",
+        p: "4px",
+        "& .MuiToggleButtonGroup-grouped": {
+            border: 0,
+            borderRadius: "var(--radius-sm) !important",
+            px: 2.5,
+            py: 0.75,
+            gap: 1,
+            textTransform: "none",
+            fontWeight: 600,
+            color: "var(--slate-600)",
+            "&.Mui-selected": {
+                backgroundColor: "#fff",
+                color: "var(--navy-700)",
+                boxShadow: "var(--shadow-xs)",
+                "&:hover": { backgroundColor: "#fff" },
+            },
+        },
+    };
+
+    const handleLanguageChange = (e, lang) => {
+        if (!lang) return;
+        setClaimLanguage(lang);
+        if (lang === "fr") {
+            // French journey: the claim box holds the user's own French.
+            setTranslatedFromBambara(false);
+        }
+    };
+
+    const translateBambaraText = async () => {
+        const bmText = bambaraText.trim();
+        if (!bmText) return;
+
+        setTranslating(true);
+        try {
+            const accessToken = getAccessToken();
+            const response = await axios.post(
+                `${API_BASE_URL}bambara/translate/`,
+                { text: bmText, source_lang: "bm", target_lang: "fr" },
+                {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`,
+                        "Content-Type": "application/json",
+                    },
+                }
+            );
+            setTexte(response.data.translated_text || bmText);
+            setTranslatedFromBambara(true);
+            resetResultState();
+            toast.success("Traduit en français. Corrigez si besoin, puis vérifiez.");
+        } catch (error) {
+            console.error("Erreur lors de la traduction Bambara :", error);
+            toast.error("Impossible de traduire ce texte. Veuillez réessayer.");
+        } finally {
+            setTranslating(false);
+        }
+    };
+
     const voice = useBambaraVoiceVerify({
         getAccessToken,
         isLoggedIn,
-        enabled: inputMode === "voice",
+        enabled: claimLanguage === "bm" && bambaraInput === "voice",
         onText: (frenchText) => {
             setTexte(frenchText);
+            setTranslatedFromBambara(true);
             resetResultState();
         },
     });
@@ -350,66 +419,123 @@ function SubmitFact() {
                                         Information à vérifier
                                     </Typography>
                                     <Typography variant="body2" sx={{ color: "var(--slate-600)", mb: 2 }}>
-                                        Écrivez une affirmation ou dictez-la en Bambara pour lancer la vérification.
+                                        Choisissez la langue de votre affirmation, puis saisissez-la (ou dictez-la en bambara).
                                     </Typography>
 
+                                    {/* Langue de l'affirmation (le parcours) */}
                                     <ToggleButtonGroup
-                                        value={inputMode}
+                                        value={claimLanguage}
                                         exclusive
-                                        onChange={(e, mode) => mode && setInputMode(mode)}
-                                        aria-label="Mode de saisie"
-                                        sx={{
-                                            mb: 3,
-                                            display: "inline-flex",
-                                            borderRadius: "var(--radius-md)",
-                                            border: "1px solid var(--slate-200)",
-                                            backgroundColor: "var(--slate-50)",
-                                            p: "4px",
-                                            "& .MuiToggleButtonGroup-grouped": {
-                                                border: 0,
-                                                borderRadius: "var(--radius-sm) !important",
-                                                px: 2.5,
-                                                py: 0.75,
-                                                gap: 1,
-                                                textTransform: "none",
-                                                fontWeight: 600,
-                                                color: "var(--slate-600)",
-                                                "&.Mui-selected": {
-                                                    backgroundColor: "#fff",
-                                                    color: "var(--navy-700)",
-                                                    boxShadow: "var(--shadow-xs)",
-                                                    "&:hover": { backgroundColor: "#fff" },
-                                                },
-                                            },
-                                        }}
+                                        onChange={handleLanguageChange}
+                                        aria-label="Langue de l'affirmation"
+                                        sx={{ mb: 3, ...segmentedSx }}
                                     >
-                                        <ToggleButton value="text" aria-label="Texte">
-                                            <Keyboard sx={{ fontSize: 18 }} /> Texte
+                                        <ToggleButton value="fr" aria-label="Français">
+                                            Français
                                         </ToggleButton>
-                                        <ToggleButton value="voice" aria-label="Voix">
-                                            <Mic sx={{ fontSize: 18 }} /> Voix
+                                        <ToggleButton value="bm" aria-label="Bambara">
+                                            Bambara
                                         </ToggleButton>
                                     </ToggleButtonGroup>
 
-                                    {inputMode === "voice" && (
-                                        <BambaraVoiceVerify
-                                            phase={voice.phase}
-                                            transcript={voice.transcript}
-                                            isTouch={voice.isTouch}
-                                            loading={loading}
-                                            onToggle={voice.toggle}
-                                            onStart={voice.start}
-                                            onStop={voice.stop}
-                                        />
+                                    {claimLanguage === "bm" && (
+                                        <Box sx={{ mb: 3 }}>
+                                            <ToggleButtonGroup
+                                                value={bambaraInput}
+                                                exclusive
+                                                onChange={(e, mode) => mode && setBambaraInput(mode)}
+                                                aria-label="Mode de saisie en bambara"
+                                                sx={{ mb: 2, ...segmentedSx }}
+                                            >
+                                                <ToggleButton value="voice" aria-label="Parler">
+                                                    <Mic sx={{ fontSize: 18 }} /> Parler
+                                                </ToggleButton>
+                                                <ToggleButton value="text" aria-label="Écrire">
+                                                    <Keyboard sx={{ fontSize: 18 }} /> Écrire
+                                                </ToggleButton>
+                                            </ToggleButtonGroup>
+
+                                            {bambaraInput === "voice" && (
+                                                <BambaraVoiceVerify
+                                                    phase={voice.phase}
+                                                    transcript={voice.transcript}
+                                                    isTouch={voice.isTouch}
+                                                    loading={loading}
+                                                    onToggle={voice.toggle}
+                                                    onStart={voice.start}
+                                                    onStop={voice.stop}
+                                                />
+                                            )}
+
+                                            {bambaraInput === "text" && (
+                                                <Box>
+                                                    <Typography
+                                                        component="label"
+                                                        htmlFor="bambara-input"
+                                                        sx={{ display: "block", fontWeight: 600, color: "var(--navy-900)", mb: 1 }}
+                                                    >
+                                                        Votre affirmation en bambara
+                                                    </Typography>
+                                                    <TextField
+                                                        id="bambara-input"
+                                                        placeholder="Sɛbɛn i ka kuma bamanankan na…"
+                                                        multiline
+                                                        rows={3}
+                                                        value={bambaraText}
+                                                        onChange={(e) => setBambaraText(e.target.value)}
+                                                        fullWidth
+                                                        variant="outlined"
+                                                        sx={{
+                                                            "& .MuiOutlinedInput-root": {
+                                                                borderRadius: "var(--radius-md)",
+                                                                backgroundColor: "var(--slate-50)",
+                                                                "& fieldset": { borderColor: "var(--slate-200)" },
+                                                                "&:hover fieldset": { borderColor: "var(--slate-300)" },
+                                                                "&.Mui-focused fieldset": { borderColor: "var(--navy-600)" },
+                                                            },
+                                                        }}
+                                                    />
+                                                    <Button
+                                                        type="button"
+                                                        onClick={translateBambaraText}
+                                                        disabled={translating || !bambaraText.trim()}
+                                                        startIcon={<Translate />}
+                                                        sx={{
+                                                            mt: 1.5,
+                                                            textTransform: "none",
+                                                            fontWeight: 700,
+                                                            color: "var(--navy-700)",
+                                                            borderRadius: "var(--radius-md)",
+                                                            border: "1px solid var(--slate-200)",
+                                                            px: 2,
+                                                            "&:hover": { backgroundColor: "var(--navy-50)" },
+                                                        }}
+                                                    >
+                                                        {translating ? "Traduction…" : "Traduire en français"}
+                                                    </Button>
+                                                </Box>
+                                            )}
+                                        </Box>
                                     )}
 
                                     <Typography
                                         component="label"
                                         htmlFor="claim-input"
-                                        sx={{ display: "block", fontWeight: 600, color: "var(--navy-900)", mb: 1 }}
+                                        sx={{ display: "block", fontWeight: 600, color: "var(--navy-900)", mb: translatedFromBambara ? 0.5 : 1 }}
                                     >
-                                        Affirmation à vérifier
+                                        {claimLanguage === "bm"
+                                            ? "Affirmation à vérifier (en français)"
+                                            : "Affirmation à vérifier"}
                                     </Typography>
+                                    {translatedFromBambara && (
+                                        <Typography
+                                            variant="body2"
+                                            sx={{ mb: 1, color: "var(--slate-500)", display: "flex", alignItems: "center", gap: 0.75 }}
+                                        >
+                                            <Translate sx={{ fontSize: 16, color: "var(--slate-400)" }} />
+                                            Traduit du bambara — corrigez le texte si besoin avant de vérifier.
+                                        </Typography>
+                                    )}
                                     <TextField
                                         id="claim-input"
                                         placeholder="Exemple : Le gouvernement a annoncé une nouvelle mesure sur..."
