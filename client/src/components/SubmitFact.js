@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import axios from "axios";
 import { API_BASE_URL } from "../config";
 import { toast, ToastContainer } from "react-toastify";
@@ -17,6 +18,7 @@ import {
     Paper,
     ToggleButton,
     ToggleButtonGroup,
+    Link as MuiLink,
 } from "@mui/material";
 import {
     FactCheck,
@@ -32,6 +34,7 @@ import VerdictBadge from "./brand/VerdictBadge";
 import SourceCard from "./brand/SourceCard";
 import VoiceDictation from "./VoiceDictation";
 import { useVoiceDictation } from "../hooks/useVoiceDictation";
+import { fiabilite } from "../data/fiabilite";
 
 // Fallback responses si aucune explication détaillée n'est disponible
 const fallbackResponses = {
@@ -720,6 +723,17 @@ function SubmitFact() {
                                             </>
                                         )}
                                     </Alert>
+
+                                    <Typography
+                                        variant="caption"
+                                        component="p"
+                                        sx={{ mt: 2, color: "var(--slate-500)" }}
+                                    >
+                                        Évalué sur {fiabilite.n} vérifications réelles —{" "}
+                                        <MuiLink component={RouterLink} to="/fiabilite" color="inherit">
+                                            voir la méthodologie
+                                        </MuiLink>
+                                    </Typography>
                                 </Paper>
                             </Fade>
                         )}
