@@ -24,6 +24,7 @@ import {
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
 import Logo from "./brand/Logo";
+import { fiabilite } from "../data/fiabilite";
 
 function Home() {
     const { isLoggedIn } = useContext(AuthContext);
@@ -131,6 +132,7 @@ function Home() {
                                         opacity: 0.95,
                                         lineHeight: 1.4,
                                         maxWidth: "600px",
+                                        color: "white",
                                     }}
                                 >
                                     La plateforme IA de référence pour la
@@ -173,7 +175,8 @@ function Home() {
                                                     borderRadius:
                                                         "var(--radius-md)",
                                                     "&:hover": {
-                                                        bgcolor: "var(--navy-50)",
+                                                        bgcolor:
+                                                            "var(--navy-50)",
                                                         transform:
                                                             "translateY(-2px)",
                                                         boxShadow:
@@ -225,7 +228,8 @@ function Home() {
                                                     borderRadius:
                                                         "var(--radius-md)",
                                                     "&:hover": {
-                                                        bgcolor: "var(--green-600)",
+                                                        bgcolor:
+                                                            "var(--green-600)",
                                                         transform:
                                                             "translateY(-2px)",
                                                         boxShadow:
@@ -261,6 +265,27 @@ function Home() {
                                         </>
                                     )}
                                 </Stack>
+                                <Typography
+                                    variant="body2"
+                                    sx={{
+                                        mt: 3,
+                                        color: "rgba(255, 255, 255, 0.75)",
+                                    }}
+                                >
+                                    Évalué sur {fiabilite.n} vérifications
+                                    réelles —{" "}
+                                    <Box
+                                        component={Link}
+                                        to="/fiabilite"
+                                        sx={{
+                                            color: "inherit",
+                                            textDecoration: "underline",
+                                            "&:hover": { color: "#fff" },
+                                        }}
+                                    >
+                                        voir la méthodologie
+                                    </Box>
+                                </Typography>
                             </Stack>
                         </Grid>
                         <Grid item xs={12} md={5}>
@@ -295,11 +320,7 @@ function Home() {
                                         },
                                     }}
                                 >
-                                    <Logo
-                                        variant="icon"
-                                        white
-                                        height={160}
-                                    />
+                                    <Logo variant="icon" white height={160} />
                                 </Box>
                             </Box>
                         </Grid>
@@ -504,13 +525,19 @@ function Home() {
                                 {
                                     icon: TrendingUp,
                                     title: "Fiable",
-                                    description: "99.2% de précision",
+                                    description: `Évalué sur ${fiabilite.n} vérifications réelles`,
+                                    to: "/fiabilite",
                                 },
                             ].map((benefit, index) => (
                                 <Grid item xs={12} md={4} key={index}>
                                     <Card
+                                        {...(benefit.to
+                                            ? { component: Link, to: benefit.to }
+                                            : {})}
                                         sx={{
                                             height: "100%",
+                                            display: "block",
+                                            textDecoration: "none",
                                             bgcolor: "white",
                                             border: "1px solid var(--slate-200)",
                                             borderRadius: "var(--radius-lg)",
@@ -530,7 +557,8 @@ function Home() {
                                                     sx={{
                                                         width: 64,
                                                         height: 64,
-                                                        bgcolor: "var(--navy-600)",
+                                                        bgcolor:
+                                                            "var(--navy-600)",
                                                         borderRadius:
                                                             "var(--radius-md)",
                                                         mb: 1,
@@ -633,7 +661,9 @@ function Home() {
                                             />
                                             <Typography
                                                 variant="body1"
-                                                sx={{ color: "var(--slate-700)" }}
+                                                sx={{
+                                                    color: "var(--slate-700)",
+                                                }}
                                             >
                                                 {item}
                                             </Typography>
@@ -683,7 +713,9 @@ function Home() {
                                             </Typography>
                                             <Typography
                                                 variant="body2"
-                                                sx={{ color: "var(--slate-500)" }}
+                                                sx={{
+                                                    color: "var(--slate-500)",
+                                                }}
                                             >
                                                 Résultats en secondes
                                             </Typography>
@@ -721,7 +753,9 @@ function Home() {
                                             </Typography>
                                             <Typography
                                                 variant="body2"
-                                                sx={{ color: "var(--slate-500)" }}
+                                                sx={{
+                                                    color: "var(--slate-500)",
+                                                }}
                                             >
                                                 Données protégées
                                             </Typography>
@@ -729,8 +763,12 @@ function Home() {
                                     </Grid>
                                     <Grid item xs={12}>
                                         <Card
+                                            component={Link}
+                                            to="/fiabilite"
                                             sx={{
                                                 p: 3,
+                                                display: "block",
+                                                textDecoration: "none",
                                                 textAlign: "center",
                                                 bgcolor: "white",
                                                 border: "1px solid var(--slate-200)",
@@ -760,9 +798,12 @@ function Home() {
                                             </Typography>
                                             <Typography
                                                 variant="body2"
-                                                sx={{ color: "var(--slate-500)" }}
+                                                sx={{
+                                                    color: "var(--slate-500)",
+                                                }}
                                             >
-                                                99.2% de précision
+                                                Évalué sur {fiabilite.n}{" "}
+                                                vérifications réelles
                                             </Typography>
                                         </Card>
                                     </Grid>
@@ -797,6 +838,7 @@ function Home() {
                                 fontFamily: "var(--font-display)",
                                 fontSize: { xs: "2rem", md: "2.5rem" },
                                 fontWeight: 700,
+                                color: "white",
                             }}
                         >
                             Prêt à Vérifier ?
