@@ -12,6 +12,8 @@ import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
 import Terms from "./components/Terms";
 import Privacy from "./components/Privacy";
+import Fiabilite from "./components/Fiabilite";
+import Reliability from "./components/Reliability";
 import { AuthProvider } from "./utils/AuthContext";
 
 function App() {
@@ -34,6 +36,8 @@ function App() {
                             <Route path="/register" element={<Register />} />
                             <Route path="/terms" element={<Terms />} />
                             <Route path="/privacy" element={<Privacy />} />
+                            <Route path="/fiabilite" element={<Fiabilite />} />
+                            <Route path="/reliability" element={<Reliability />} />
                             <Route
                                 path="/submit"
                                 element={

@@ -131,6 +131,13 @@ function Footer() {
                             >
                                 Détection IA
                             </Link>
+                            <Link
+                                href="/fiabilite"
+                                color="inherit"
+                                sx={linkSx}
+                            >
+                                Fiabilité
+                            </Link>
                         </Box>
                     </Grid>
 

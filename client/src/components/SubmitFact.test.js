@@ -1,6 +1,7 @@
 import React from "react";
 import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
 import SubmitFact from "./SubmitFact";
 import { AuthContext } from "../utils/AuthContext";
@@ -21,7 +22,9 @@ const renderSubmitFact = () =>
                 getAccessToken: jest.fn(() => "access-token"),
             }}
         >
-            <SubmitFact />
+            <MemoryRouter>
+                <SubmitFact />
+            </MemoryRouter>
         </AuthContext.Provider>
     );
 
@@ -90,6 +93,38 @@ test("manual submit posts the (French) claim to the submissions endpoint", async
             JSON_HEADERS
         )
     );
+});
+
+test("the result screen shows the evaluation line linking to the methodology", async () => {
+    const intervalSpy = jest.spyOn(window, "setInterval").mockImplementation((cb) => {
+        cb();
+        return 1;
+    });
+    axios.post.mockResolvedValueOnce({ data: { id: 9 } });
+    axios.get.mockResolvedValue({
+        data: {
+            statut: "vérifié",
+            web_sources: [],
+            detailed_result: "Résultat détaillé de la vérification.",
+        },
+    });
+
+    renderSubmitFact();
+
+    fireEvent.change(screen.getByLabelText(CLAIM_LABEL), {
+        target: { value: "Une affirmation à vérifier" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: VERIFY_BUTTON }));
+
+    expect(
+        await screen.findByText(/évalué sur 396 vérifications réelles/i, { selector: "p" })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /voir la méthodologie/i })).toHaveAttribute(
+        "href",
+        "/fiabilite"
+    );
+
+    intervalSpy.mockRestore();
 });
 
 test("Bambara journey: the verdict is translated back to Bambara, with a toggle to French", async () => {
