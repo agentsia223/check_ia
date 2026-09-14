@@ -722,3 +722,99 @@ def test_translate_with_retry_raises_after_exhausting_attempts(monkeypatch):
         ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
 
     assert translate_mock.call_count == 3
+
+
+def test_translate_text_uses_official_api_and_skips_scraper(monkeypatch):
+    from core.services import ai_analysis, bambara_voice
+
+    monkeypatch.setattr(
+        bambara_voice,
+        "translate_bambara_text",
+        Mock(return_value={"translated_text": " hello "}),
+    )
+    google_mock = Mock(side_effect=AssertionError("GoogleTranslator should not be called"))
+    monkeypatch.setattr(ai_analysis, "GoogleTranslator", google_mock)
+
+    result = ai_analysis.translate_text("bonjour", source="fr", target="en")
+
+    assert result == "hello"
+    google_mock.assert_not_called()
+
+
+def test_translate_text_falls_back_to_scraper_when_official_fails(monkeypatch, caplog):
+    from core.services import ai_analysis, bambara_voice
+
+    monkeypatch.setattr(
+        bambara_voice,
+        "translate_bambara_text",
+        Mock(side_effect=RuntimeError("not configured")),
+    )
+
+    class FakeTranslator:
+        def __init__(self, source, target):
+            pass
+
+        def translate(self, text):
+            return "hello"
+
+    monkeypatch.setattr(ai_analysis, "GoogleTranslator", FakeTranslator)
+
+    with caplog.at_level("WARNING"):
+        result = ai_analysis.translate_text("bonjour", source="fr", target="en")
+
+    assert result == "hello"
+    assert any("repli sur le service gratuit" in record.message for record in caplog.records)
+
+
+def test_translate_text_returns_none_when_both_fail(monkeypatch):
+    from core.services import ai_analysis, bambara_voice
+
+    monkeypatch.setattr(
+        bambara_voice,
+        "translate_bambara_text",
+        Mock(side_effect=RuntimeError("not configured")),
+    )
+
+    class FakeTranslator:
+        def __init__(self, source, target):
+            pass
+
+        def translate(self, text):
+            raise RuntimeError("scraper down")
+
+    monkeypatch.setattr(ai_analysis, "GoogleTranslator", FakeTranslator)
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: None)
+
+    result = ai_analysis.translate_text("bonjour", source="fr", target="en")
+
+    assert result is None
+
+
+def test_analyze_text_skips_roberta_when_translation_unavailable(monkeypatch):
+    from core.services import ai_analysis
+
+    monkeypatch.setattr(ai_analysis, "translate_text", Mock(return_value=None))
+    monkeypatch.setattr(
+        ai_analysis,
+        "search_with_perplexity",
+        Mock(return_value={"sources": [], "citations": [], "verification_content": ""}),
+    )
+    llm_mock = Mock(
+        return_value={
+            "statut": "INDÉTERMINÉE",
+            "explication": "pas assez d'information",
+            "sources_principales": [],
+        }
+    )
+    monkeypatch.setattr(ai_analysis, "llm_analysis", llm_mock)
+    encode_plus_mock = Mock(side_effect=AssertionError("RoBERTa tokenizer should not be invoked"))
+    monkeypatch.setattr(ai_analysis.tokenizer, "encode_plus", encode_plus_mock)
+
+    result, sources = ai_analysis.analyze_text("un texte quelconque")
+
+    encode_plus_mock.assert_not_called()
+
+    assert result["statut"] == "INDÉTERMINÉE"
+    assert sources == []
+    llm_mock.assert_called_once()
+    assert llm_mock.call_args[0][1] == "indéterminé"
