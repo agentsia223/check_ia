@@ -22,6 +22,34 @@ model = AutoModelForSequenceClassification.from_pretrained(model_name)
 logging.info("Modèle et tokenizer chargés avec succès.")
 
 
+def _translate_official(text, source, target):
+    """Translate via the official paid Bambara API translate endpoint (fr/en supported)."""
+    from core.services.bambara_voice import translate_bambara_text
+
+    result = translate_bambara_text(text, source_lang=source, target_lang=target)
+    translated = (result or {}).get("translated_text", "")
+    translated = translated.strip() if isinstance(translated, str) else ""
+    if not translated:
+        raise RuntimeError("Traduction officielle vide")
+    return translated
+
+
+def translate_text(text, source='fr', target='en'):
+    """Translate, preferring the official paid API and falling back to the free scraper."""
+    try:
+        return _translate_official(text, source, target)
+    except Exception as e:
+        logging.warning(
+            f"Traduction officielle indisponible ({e}), repli sur le service gratuit"
+        )
+
+    try:
+        return _translate_with_retry(text, source=source, target=target)
+    except Exception as e:
+        logging.error(f"Traduction impossible: {e}")
+        return None
+
+
 def _translate_with_retry(text, source='fr', target='en', max_attempts=3):
     """Translate with a small retry/backoff for transient rate-limit/network errors."""
     last_error = None
@@ -46,43 +74,52 @@ def analyze_text(text):
         logging.info(f"=== DÉBUT DE L'ANALYSE ===")
         logging.info(f"Texte original à analyser: {text}")
         
-        # Traduire le texte en anglais avec deep-translator
+        # Traduire le texte en anglais (API officielle en priorité, repli sur le service gratuit)
         logging.info("ÉTAPE 1: Traduction du texte en anglais...")
-        translated_text = _translate_with_retry(text, source='fr', target='en')
-        logging.info(f"Texte traduit: {translated_text}")
+        translated_text = translate_text(text, source='fr', target='en')
 
-        # Préparer l'entrée pour le modèle
-        logging.info("ÉTAPE 2: Préparation pour le modèle RoBERTa...")
-        input_str = f"<title> Title <content> {translated_text} <end>"
-        logging.info(f"Input formaté pour RoBERTa: {input_str[:100]}...")
-        
-        input_ids = tokenizer.encode_plus(input_str, max_length=512, padding="max_length", truncation=True, return_tensors="pt")
-        logging.info("Texte encodé avec succès pour le modèle.")
+        if translated_text is None:
+            logging.warning("Classifieur RoBERTa ignoré : traduction indisponible")
+            prediction = None
+            confidence = None
+            probabilities = None
+            initial_result = "indéterminé"
+            translated_text = text
+        else:
+            logging.info(f"Texte traduit: {translated_text}")
 
-        # Effectuer la prédiction
-        logging.info("ÉTAPE 3: Prédiction avec le modèle RoBERTa...")
-        device = 'cuda' if torch.cuda.is_available() else 'cpu'
-        model.to(device)
-        logging.info(f"Utilisation du dispositif : {device}")
+            # Préparer l'entrée pour le modèle
+            logging.info("ÉTAPE 2: Préparation pour le modèle RoBERTa...")
+            input_str = f"<title> Title <content> {translated_text} <end>"
+            logging.info(f"Input formaté pour RoBERTa: {input_str[:100]}...")
 
-        with torch.no_grad():
-            logging.info("Effectuation de la prédiction...")
-            output = model(input_ids['input_ids'].to(device), attention_mask=input_ids['attention_mask'].to(device))
-            logging.info("Prédiction terminée.")
+            input_ids = tokenizer.encode_plus(input_str, max_length=512, padding="max_length", truncation=True, return_tensors="pt")
+            logging.info("Texte encodé avec succès pour le modèle.")
 
-        # Convertir la prédiction en probabilité
-        logging.info("Analyse des résultats du modèle RoBERTa...")
-        probabilities = torch.nn.functional.softmax(output.logits, dim=-1)[0]
-        prediction = torch.argmax(probabilities).item()
-        confidence = probabilities[prediction].item()
-        
-        logging.info(f"Résultat de la prédiction RoBERTa: {prediction}")
-        logging.info(f"Probabilités: {probabilities.tolist()}")
-        logging.info(f"Confiance: {confidence:.4f}")
+            # Effectuer la prédiction
+            logging.info("ÉTAPE 3: Prédiction avec le modèle RoBERTa...")
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+            model.to(device)
+            logging.info(f"Utilisation du dispositif : {device}")
 
-        # Traduire le résultat en français
-        initial_result = "vérifié" if prediction == 1 else "rejeté"
-        logging.info(f"Résultat initial RoBERTa: {initial_result} (confiance: {confidence:.2%})")
+            with torch.no_grad():
+                logging.info("Effectuation de la prédiction...")
+                output = model(input_ids['input_ids'].to(device), attention_mask=input_ids['attention_mask'].to(device))
+                logging.info("Prédiction terminée.")
+
+            # Convertir la prédiction en probabilité
+            logging.info("Analyse des résultats du modèle RoBERTa...")
+            probabilities = torch.nn.functional.softmax(output.logits, dim=-1)[0]
+            prediction = torch.argmax(probabilities).item()
+            confidence = probabilities[prediction].item()
+
+            logging.info(f"Résultat de la prédiction RoBERTa: {prediction}")
+            logging.info(f"Probabilités: {probabilities.tolist()}")
+            logging.info(f"Confiance: {confidence:.4f}")
+
+            # Traduire le résultat en français
+            initial_result = "vérifié" if prediction == 1 else "rejeté"
+            logging.info(f"Résultat initial RoBERTa: {initial_result} (confiance: {confidence:.2%})")
 
         # Utiliser Perplexity pour rechercher des sources et vérifier le fait
         logging.info("ÉTAPE 4: Recherche avec Perplexity...")
