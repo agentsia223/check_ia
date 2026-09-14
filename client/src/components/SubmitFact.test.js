@@ -127,6 +127,57 @@ test("the result screen shows the evaluation line linking to the methodology", a
     intervalSpy.mockRestore();
 });
 
+test("statut erreur shows a technical-failure message, not a false verdict", async () => {
+    const intervalSpy = jest.spyOn(window, "setInterval").mockImplementation((cb) => {
+        cb();
+        return 1;
+    });
+    axios.post.mockResolvedValueOnce({ data: { id: 10 } });
+    axios.get.mockResolvedValue({
+        data: { statut: "erreur", web_sources: [], detailed_result: "" },
+    });
+
+    renderSubmitFact();
+
+    fireEvent.change(screen.getByLabelText(CLAIM_LABEL), {
+        target: { value: "Une affirmation à vérifier" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: VERIFY_BUTTON }));
+
+    expect(await screen.findByText("Analyse impossible")).toBeInTheDocument();
+    expect(
+        screen.getByText(
+            /une erreur technique a empêché l'analyse de cette affirmation/i
+        )
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Information Douteuse")).not.toBeInTheDocument();
+
+    intervalSpy.mockRestore();
+});
+
+test("statut indéterminé shows the abstention message, not a false verdict", async () => {
+    const intervalSpy = jest.spyOn(window, "setInterval").mockImplementation((cb) => {
+        cb();
+        return 1;
+    });
+    axios.post.mockResolvedValueOnce({ data: { id: 11 } });
+    axios.get.mockResolvedValue({
+        data: { statut: "indéterminé", web_sources: [], detailed_result: "" },
+    });
+
+    renderSubmitFact();
+
+    fireEvent.change(screen.getByLabelText(CLAIM_LABEL), {
+        target: { value: "Une affirmation à vérifier" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: VERIFY_BUTTON }));
+
+    expect(await screen.findByText("Information non tranchée")).toBeInTheDocument();
+    expect(screen.getByText("Non tranché")).toBeInTheDocument();
+
+    intervalSpy.mockRestore();
+});
+
 test("Bambara journey: the verdict is translated back to Bambara, with a toggle to French", async () => {
     const intervalSpy = jest.spyOn(window, "setInterval").mockImplementation((cb) => {
         cb();

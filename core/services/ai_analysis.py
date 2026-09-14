@@ -1,7 +1,10 @@
 import logging
+import random
+import time
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from deep_translator import GoogleTranslator
+from deep_translator.exceptions import TooManyRequests, RequestError
 from core.services.llm import llm_analysis
 from core.services.perplexity_search import search_with_perplexity
 import os
@@ -19,6 +22,25 @@ model = AutoModelForSequenceClassification.from_pretrained(model_name)
 logging.info("Modèle et tokenizer chargés avec succès.")
 
 
+def _translate_with_retry(text, source='fr', target='en', max_attempts=3):
+    """Translate with a small retry/backoff for transient rate-limit/network errors."""
+    last_error = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return GoogleTranslator(source=source, target=target).translate(text)
+        except (TooManyRequests, RequestError) as e:
+            last_error = e
+            if attempt == max_attempts:
+                break
+            delay = (2 ** (attempt - 1)) + random.uniform(0, 0.5)
+            logging.warning(
+                f"Traduction échouée (tentative {attempt}/{max_attempts}): {e}. "
+                f"Nouvelle tentative dans {delay:.1f}s..."
+            )
+            time.sleep(delay)
+    raise last_error
+
+
 def analyze_text(text):
     try:
         logging.info(f"=== DÉBUT DE L'ANALYSE ===")
@@ -26,7 +48,7 @@ def analyze_text(text):
         
         # Traduire le texte en anglais avec deep-translator
         logging.info("ÉTAPE 1: Traduction du texte en anglais...")
-        translated_text = GoogleTranslator(source='fr', target='en').translate(text)
+        translated_text = _translate_with_retry(text, source='fr', target='en')
         logging.info(f"Texte traduit: {translated_text}")
 
         # Préparer l'entrée pour le modèle

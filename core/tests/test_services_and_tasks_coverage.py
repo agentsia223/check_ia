@@ -10,6 +10,7 @@ from django.core.files.base import ContentFile
 from core.models import Fact, ImageVerification, Keyword, Submission
 from core.services import image_verification, llm, perplexity_search, supabase_storage
 from core.tasks import (
+    SAFE_ANALYSIS_ERROR_MESSAGE,
     analyze_submission_text_task,
     detect_ai_image_task,
     upload_and_verify_image_task,
@@ -455,8 +456,9 @@ def test_analyze_submission_task_handles_legacy_and_errors(monkeypatch):
 
     assert failed["success"] is False
     submission.refresh_from_db()
-    assert submission.statut == "rejeté"
-    assert "analysis failed" in submission.detailed_result
+    assert submission.statut == "erreur"
+    assert submission.detailed_result == SAFE_ANALYSIS_ERROR_MESSAGE
+    assert "analysis failed" not in submission.detailed_result
 
 
 @pytest.mark.django_db
@@ -550,3 +552,173 @@ def test_image_tasks_update_success_error_and_upload_paths(monkeypatch):
         "ai_detection",
     )
     assert failed_upload == {"success": False, "error": "Erreur lors de l'upload: upload failed"}
+
+
+@pytest.mark.django_db
+def test_analyze_submission_task_erreur_label_never_shows_raw_exception(monkeypatch):
+    """Reproduces the production incident: analyze_text swallows its own exception and
+    returns a success-shaped dict with statut='ERREUR' and the raw exception text embedded
+    in 'explication'. This must never be persisted or mapped to a verdict-like status."""
+    user_id = uuid.uuid4()
+    submission = Submission.objects.create(
+        supabase_user_id=user_id,
+        user_email="user@example.com",
+        user_name="User",
+        texte="Claim during outage",
+        source="",
+    )
+    raw_error_text = "HTTPError 429 Too Many Requests from translate.google.com"
+    monkeypatch.setattr(
+        "core.tasks.analyze_text",
+        Mock(
+            return_value=(
+                {
+                    "statut": "ERREUR",
+                    "explication": f"Une erreur s'est produite lors de l'analyse: {raw_error_text}",
+                    "sources_principales": [],
+                },
+                [],
+            )
+        ),
+    )
+
+    result = analyze_submission_text_task.run(submission.id, "Claim during outage")
+
+    submission.refresh_from_db()
+    assert result["success"] is True
+    assert submission.statut == "erreur"
+    assert submission.detailed_result == SAFE_ANALYSIS_ERROR_MESSAGE
+    assert raw_error_text not in submission.detailed_result
+    assert not Fact.objects.exists()
+
+
+@pytest.mark.django_db
+def test_analyze_submission_task_indeterminee_label_maps_to_indetermine(monkeypatch):
+    user_id = uuid.uuid4()
+    submission = Submission.objects.create(
+        supabase_user_id=user_id,
+        user_email="user@example.com",
+        user_name="User",
+        texte="Ambiguous claim",
+        source="",
+    )
+    monkeypatch.setattr(
+        "core.tasks.analyze_text",
+        Mock(
+            return_value=(
+                {"statut": "INDÉTERMINÉE", "explication": "Pas assez de sources", "sources_principales": []},
+                [],
+            )
+        ),
+    )
+
+    result = analyze_submission_text_task.run(submission.id, "Ambiguous claim")
+
+    submission.refresh_from_db()
+    assert result["success"] is True
+    assert submission.statut == "indéterminé"
+    assert not Fact.objects.exists()
+
+
+@pytest.mark.django_db
+def test_analyze_submission_task_unknown_label_maps_to_indetermine(monkeypatch):
+    user_id = uuid.uuid4()
+    submission = Submission.objects.create(
+        supabase_user_id=user_id,
+        user_email="user@example.com",
+        user_name="User",
+        texte="Weird claim",
+        source="",
+    )
+    monkeypatch.setattr(
+        "core.tasks.analyze_text",
+        Mock(
+            return_value=(
+                {"statut": "SOMETHING_UNEXPECTED", "explication": "n/a", "sources_principales": []},
+                [],
+            )
+        ),
+    )
+
+    result = analyze_submission_text_task.run(submission.id, "Weird claim")
+
+    submission.refresh_from_db()
+    assert result["success"] is True
+    assert submission.statut == "indéterminé"
+    assert not Fact.objects.exists()
+
+
+@pytest.mark.django_db
+def test_analyze_submission_task_pipeline_raises_sets_erreur_status(monkeypatch):
+    user_id = uuid.uuid4()
+    submission = Submission.objects.create(
+        supabase_user_id=user_id,
+        user_email="user@example.com",
+        user_name="User",
+        texte="Some claim",
+        source="",
+    )
+    monkeypatch.setattr(
+        "core.tasks.analyze_text",
+        Mock(side_effect=RuntimeError("boom: secret token abc123")),
+    )
+
+    result = analyze_submission_text_task.run(submission.id, "Some claim")
+
+    submission.refresh_from_db()
+    assert result["success"] is False
+    assert submission.statut == "erreur"
+    assert submission.detailed_result == SAFE_ANALYSIS_ERROR_MESSAGE
+    assert "boom" not in submission.detailed_result
+    assert "abc123" not in submission.detailed_result
+    assert not Fact.objects.exists()
+
+
+def test_translate_with_retry_succeeds_after_transient_errors(monkeypatch):
+    from deep_translator.exceptions import TooManyRequests
+
+    from core.services import ai_analysis
+
+    sleep_calls = []
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: sleep_calls.append(seconds))
+
+    translate_mock = Mock(side_effect=[TooManyRequests("fr"), TooManyRequests("fr"), "ok"])
+
+    class FakeTranslator:
+        def __init__(self, source, target):
+            pass
+
+        def translate(self, text):
+            return translate_mock(text)
+
+    monkeypatch.setattr(ai_analysis, "GoogleTranslator", FakeTranslator)
+
+    result = ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
+
+    assert result == "ok"
+    assert translate_mock.call_count == 3
+    assert len(sleep_calls) == 2
+
+
+def test_translate_with_retry_raises_after_exhausting_attempts(monkeypatch):
+    from deep_translator.exceptions import TooManyRequests
+
+    from core.services import ai_analysis
+
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: None)
+
+    translate_mock = Mock(side_effect=[TooManyRequests("fr"), TooManyRequests("fr"), TooManyRequests("fr")])
+
+    class FakeTranslator:
+        def __init__(self, source, target):
+            pass
+
+        def translate(self, text):
+            return translate_mock(text)
+
+    monkeypatch.setattr(ai_analysis, "GoogleTranslator", FakeTranslator)
+
+    with pytest.raises(TooManyRequests):
+        ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
+
+    assert translate_mock.call_count == 3
