@@ -27,6 +27,8 @@ import {
     HourglassEmpty,
     Search,
     Translate,
+    HelpOutline,
+    ErrorOutline,
 } from "@mui/icons-material";
 import { AuthContext } from "../utils/AuthContext";
 import Logo from "./brand/Logo";
@@ -41,6 +43,8 @@ const fallbackResponses = {
     vérifié: "Cette information a été vérifiée et est considérée comme fiable selon nos analyses approfondies.",
     rejeté: "Cette information a été identifiée comme potentiellement fausse ou trompeuse après vérification.",
     "en cours": "Vérification en cours, notre IA analyse les sources disponibles...",
+    indéterminé: "Check-IA n'a pas pu établir de verdict fiable sur cette affirmation et préfère ne pas trancher plutôt que deviner.",
+    erreur: "Une erreur technique a empêché l'analyse de cette affirmation. Aucun verdict n'a été rendu — veuillez réessayer dans quelques instants.",
 };
 
 function SubmitFact() {
@@ -287,6 +291,28 @@ function SubmitFact() {
                     icon: <Warning sx={{ fontSize: 48, color: "var(--red-600)" }} />,
                     title: "Information Douteuse",
                     chip: "Non Fiable",
+                };
+            case "indéterminé":
+                return {
+                    verdict: "unverified",
+                    color: "var(--amber-700)",
+                    bgcolor: "var(--amber-50)",
+                    border: "var(--amber-200)",
+                    severity: "warning",
+                    icon: <HelpOutline sx={{ fontSize: 48, color: "var(--amber-500)" }} />,
+                    title: "Information non tranchée",
+                    chip: "Non tranché",
+                };
+            case "erreur":
+                return {
+                    verdict: "unverified",
+                    color: "var(--slate-600)",
+                    bgcolor: "var(--slate-100)",
+                    border: "var(--slate-300)",
+                    severity: "error",
+                    icon: <ErrorOutline sx={{ fontSize: 48, color: "var(--slate-500)" }} />,
+                    title: "Analyse impossible",
+                    chip: "Erreur",
                 };
             default:
                 return {

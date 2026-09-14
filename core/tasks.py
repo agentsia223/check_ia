@@ -8,6 +8,11 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+SAFE_ANALYSIS_ERROR_MESSAGE = (
+    "L'analyse n'a pas pu être menée à terme en raison d'une erreur technique. "
+    "Aucun verdict n'a été rendu. Veuillez réessayer."
+)
+
 @shared_task
 def analyze_submission_text_task(submission_id, text):
     """
@@ -34,11 +39,22 @@ def analyze_submission_text_task(submission_id, text):
             # Mapping du statut
             status_mapping = {
                 'VRAIE': 'vérifié',
-                'FAUSSE': 'rejeté', 
-                'INDÉTERMINÉE': 'rejeté'
+                'FAUSSE': 'rejeté',
+                'INDÉTERMINÉE': 'indéterminé',
+                'ERREUR': 'erreur',
             }
-            final_status = status_mapping.get(ai_status, 'rejeté')
-            
+            final_status = status_mapping.get(ai_status, 'indéterminé')
+
+            if ai_status == 'ERREUR':
+                # analyze_text swallowed its own exception and returned a
+                # success-shaped dict whose 'explication' embeds raw exception
+                # text. Never persist that to the user-facing record — log it
+                # and store the safe generic message instead.
+                logger.error(
+                    f"Analyse retournée avec statut ERREUR pour la soumission {submission_id}: {explanation}"
+                )
+                explanation = SAFE_ANALYSIS_ERROR_MESSAGE
+
         else:
             # Format legacy
             ai_status = 'LEGACY'
@@ -117,13 +133,13 @@ def analyze_submission_text_task(submission_id, text):
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
         
-        # Marquer la soumission comme erreur
+        # Marquer la soumission comme erreur (jamais comme un verdict)
         try:
             submission = Submission.objects.get(id=submission_id)
-            submission.statut = 'rejeté'
-            submission.detailed_result = f'Erreur lors de l\'analyse: {str(e)}'
+            submission.statut = 'erreur'
+            submission.detailed_result = SAFE_ANALYSIS_ERROR_MESSAGE
             submission.save()
-        except:
+        except Exception:
             pass
             
         return {

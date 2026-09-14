@@ -38,7 +38,7 @@ class Submission(models.Model):
     texte = models.TextField()  # Le texte de l'information à vérifier
     source = models.URLField(max_length=200, blank=True, null=True)  # Source de l'information (facultatif)
     date = models.DateTimeField(auto_now_add=True)  # Date de soumission
-    statut = models.CharField(max_length=50, choices=[('en cours', 'En cours'), ('vérifié', 'Vérifié'), ('rejeté', 'Rejeté')], default='en cours')  # Statut de la soumission
+    statut = models.CharField(max_length=50, choices=[('en cours', 'En cours'), ('vérifié', 'Vérifié'), ('rejeté', 'Rejeté'), ('indéterminé', 'Indéterminé'), ('erreur', 'Erreur')], default='en cours')  # Statut de la soumission
     web_sources = models.JSONField(blank=True, null=True)  # Sources web utilisées pour vérifier l'information
     detailed_result = models.TextField(blank=True, null=True)  # Detailed analysis result
 
