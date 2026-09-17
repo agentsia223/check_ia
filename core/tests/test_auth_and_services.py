@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 import pytest
+import requests
 from django.test import RequestFactory, TestCase, override_settings
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.test import APIRequestFactory, force_authenticate
@@ -10,7 +11,7 @@ from rest_framework.test import APIRequestFactory, force_authenticate
 from core.authentication import SimpleSupabaseUser, SupabaseAuthentication
 from core.middleware import SupabaseAuthMiddleware
 from core.models import Fact
-from core.services import bambara_voice, keywords_extractor, pixel_analyzer, web_scraper
+from core.services import bambara_voice, keywords_extractor, pixel_analyzer, translation, web_scraper
 from core.services.deep_translator import get_facts_translated
 
 
@@ -183,6 +184,124 @@ class BambaraVoiceServiceTest(TestCase):
         with patch("core.services.bambara_voice.requests.post", return_value=response):
             with self.assertRaisesRegex(RuntimeError, "Bambara API request failed"):
                 bambara_voice.translate_bambara_text("I ni ce", "bm", "fr")
+
+
+class GoogleTranslationServiceTest(TestCase):
+    @override_settings(GOOGLE_TRANSLATE_API_KEY="secret-key")
+    def test_translate_success_returns_unescaped_text(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {
+            "data": {"translations": [{"translatedText": "Bonjour &amp; salut"}]}
+        }
+
+        with patch("core.services.translation.requests.post", return_value=response) as post:
+            result = translation.translate("Hello", "en", "fr")
+
+        self.assertEqual(result, "Bonjour & salut")
+        _, kwargs = post.call_args
+        self.assertEqual(kwargs["params"], {"key": "secret-key"})
+        self.assertEqual(kwargs["json"]["format"], "text")
+
+    @override_settings(GOOGLE_TRANSLATE_API_KEY="secret-key")
+    def test_translate_forbidden_raises_runtime_error(self):
+        response = Mock(status_code=403, text="forbidden")
+        with patch("core.services.translation.requests.post", return_value=response):
+            with self.assertRaisesRegex(RuntimeError, "Translation request failed"):
+                translation.translate("Hello", "en", "fr")
+
+    @override_settings(GOOGLE_TRANSLATE_API_KEY="secret-key")
+    def test_translate_request_exception_raises_runtime_error(self):
+        with patch(
+            "core.services.translation.requests.post",
+            side_effect=requests.exceptions.ConnectionError("boom"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "Translation request failed"):
+                translation.translate("Hello", "en", "fr")
+
+    @override_settings(GOOGLE_TRANSLATE_API_KEY="secret-key")
+    def test_translate_empty_text_returns_empty_without_request(self):
+        with patch("core.services.translation.requests.post") as post:
+            self.assertEqual(translation.translate("   ", "en", "fr"), "")
+        post.assert_not_called()
+
+    @override_settings(GOOGLE_TRANSLATE_API_KEY="super-secret-key")
+    def test_translate_failure_never_logs_the_api_key(self):
+        response = Mock(status_code=500, text="internal error")
+        with patch("core.services.translation.requests.post", return_value=response):
+            with self.assertLogs("core.services.translation", level="WARNING") as captured:
+                with self.assertRaises(RuntimeError):
+                    translation.translate("Hello", "en", "fr")
+
+        for record in captured.records:
+            self.assertNotIn("super-secret-key", record.getMessage())
+
+
+class TranslateBambaraTextRoutingTest(TestCase):
+    @override_settings(GOOGLE_TRANSLATE_API_KEY="secret-key", BAMBARA_API_BASE_URL="")
+    def test_uses_google_when_key_configured(self):
+        with patch(
+            "core.services.translation.translate", return_value="Merci"
+        ) as google_translate, patch("core.services.bambara_voice._post") as legacy_post:
+            result = bambara_voice.translate_bambara_text("I ni ce", "bm", "fr")
+
+        google_translate.assert_called_once_with("I ni ce", "bm", "fr")
+        legacy_post.assert_not_called()
+        self.assertEqual(result["translated_text"], "Merci")
+        self.assertEqual(result["provider"], "google")
+
+    @override_settings(GOOGLE_TRANSLATE_API_KEY="", BAMBARA_API_BASE_URL="https://ml-api.railway.app")
+    def test_falls_back_to_legacy_post_without_key(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {"translated_text": "Merci"}
+
+        with patch("core.services.bambara_voice.requests.post", return_value=response) as post:
+            result = bambara_voice.translate_bambara_text("I ni ce", "bm", "fr")
+
+        post.assert_called_once()
+        self.assertEqual(result["translated_text"], "Merci")
+
+
+class BambaraPostRetryTest(TestCase):
+    @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app")
+    def test_retries_once_after_502_then_succeeds(self):
+        failure = Mock(status_code=502, text="bad gateway")
+        success = Mock(status_code=200)
+        success.json.return_value = {"translated_text": "Merci"}
+
+        with patch(
+            "core.services.bambara_voice.requests.post", side_effect=[failure, success]
+        ) as post, patch("core.services.bambara_voice.time.sleep") as sleep:
+            result = bambara_voice._post("translate", json={})
+
+        self.assertEqual(result["translated_text"], "Merci")
+        self.assertEqual(post.call_count, 2)
+        sleep.assert_called_once_with(2)
+
+    @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app")
+    def test_retries_once_then_raises_if_still_failing(self):
+        failure = Mock(status_code=502, text="bad gateway")
+
+        with patch(
+            "core.services.bambara_voice.requests.post", return_value=failure
+        ) as post, patch("core.services.bambara_voice.time.sleep") as sleep:
+            with self.assertRaisesRegex(RuntimeError, "Bambara API request failed"):
+                bambara_voice._post("translate", json={})
+
+        self.assertEqual(post.call_count, 2)
+        sleep.assert_called_once_with(2)
+
+    @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app")
+    def test_non_retryable_status_does_not_retry(self):
+        failure = Mock(status_code=500, text="server error")
+
+        with patch(
+            "core.services.bambara_voice.requests.post", return_value=failure
+        ) as post, patch("core.services.bambara_voice.time.sleep") as sleep:
+            with self.assertRaisesRegex(RuntimeError, "Bambara API request failed"):
+                bambara_voice._post("translate", json={})
+
+        self.assertEqual(post.call_count, 1)
+        sleep.assert_not_called()
 
 
 def test_extract_keywords_filters_tokens_and_entities(monkeypatch):

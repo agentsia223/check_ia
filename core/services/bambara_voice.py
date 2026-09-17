@@ -1,8 +1,11 @@
 import logging
+import time
 from urllib.parse import urljoin
 
 import requests
 from django.conf import settings
+
+from core.services import translation
 
 logger = logging.getLogger(__name__)
 
@@ -30,21 +33,44 @@ def _timeout():
     return getattr(settings, "BAMBARA_API_TIMEOUT", 60)
 
 
+_RETRYABLE_STATUSES = (502, 503, 504)
+
+
+def _do_post(url, **kwargs):
+    return requests.post(
+        url,
+        headers=_headers(),
+        timeout=_timeout(),
+        **kwargs,
+    )
+
+
 def _post(endpoint, **kwargs):
     url = urljoin(_base_url(), endpoint)
     try:
-        response = requests.post(
-            url,
-            headers=_headers(),
-            timeout=_timeout(),
-            **kwargs,
-        )
+        response = _do_post(url, **kwargs)
     except requests.exceptions.Timeout as exc:
         logger.warning("Bambara API request timed out: %s", exc)
         raise RuntimeError("Bambara API request timed out") from exc
     except requests.exceptions.RequestException as exc:
         logger.warning("Bambara API request failed: %s", exc)
         raise RuntimeError("Bambara API request failed") from exc
+
+    if response.status_code in _RETRYABLE_STATUSES:
+        logger.warning(
+            "Bambara API returned HTTP %s for %s, retrying once",
+            response.status_code,
+            endpoint,
+        )
+        time.sleep(2)
+        try:
+            response = _do_post(url, **kwargs)
+        except requests.exceptions.Timeout as exc:
+            logger.warning("Bambara API request timed out: %s", exc)
+            raise RuntimeError("Bambara API request timed out") from exc
+        except requests.exceptions.RequestException as exc:
+            logger.warning("Bambara API request failed: %s", exc)
+            raise RuntimeError("Bambara API request failed") from exc
 
     if response.status_code >= 400:
         logger.warning(
@@ -62,6 +88,15 @@ def _post(endpoint, **kwargs):
 
 
 def translate_bambara_text(text, source_lang="bm", target_lang="fr"):
+    if translation.is_configured():
+        translated_text = translation.translate(text, source_lang, target_lang)
+        return {
+            "translated_text": translated_text,
+            "source_lang": source_lang,
+            "target_lang": target_lang,
+            "provider": "google",
+        }
+
     return _post(
         "translate",
         json={
