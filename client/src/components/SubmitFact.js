@@ -200,6 +200,14 @@ function SubmitFact() {
 
     const handleLanguageChange = (e, lang) => {
         if (!lang) return;
+        if (lang === "bm" && claimLanguage !== "bm") {
+            // Wake the sleeping voice service while the user gets ready to speak.
+            Promise.resolve(
+                axios.post(`${API_BASE_URL}bambara/warm/`, null, {
+                    headers: { Authorization: `Bearer ${getAccessToken()}` },
+                })
+            ).catch(() => {});
+        }
         setClaimLanguage(lang);
         if (lang === "fr") {
             // French journey: the claim box holds the user's own French.

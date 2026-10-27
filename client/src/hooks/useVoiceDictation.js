@@ -121,6 +121,11 @@ export function useVoiceDictation({ getAccessToken, isLoggedIn, language = "bm",
                 // connection, or a worker killed mid-request (surfaces as CORS).
                 message =
                     "Connexion au service de transcription impossible. Vérifiez votre connexion et réessayez.";
+            } else if (httpStatus === 503 && error.response.data?.code === "voice_service_starting") {
+                message = "Le service vocal démarre, réessayez dans quelques secondes.";
+            } else if (httpStatus === 502) {
+                message =
+                    "Le service vocal est temporairement indisponible. Réessayez dans un instant.";
             } else if (httpStatus === 503) {
                 message =
                     "Le service de transcription est momentanément indisponible. Réessayez plus tard.";

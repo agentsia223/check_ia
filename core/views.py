@@ -16,7 +16,9 @@ import json
 from .services.ai_analysis import analyze_text
 from .services.image_verification import verify_image_content, detect_ai_generated_image
 from .services.supabase_storage import upload_image_to_supabase, create_bucket_if_not_exists
-from .services.bambara_voice import translate_bambara_text, transcribe_bambara_audio
+from .services.bambara_voice import (
+    translate_bambara_text, transcribe_bambara_audio, VoiceServiceStarting, warm_up_async,
+)
 import logging
 
 logger = logging.getLogger(__name__)
@@ -292,6 +294,14 @@ def bambara_transcribe_view(request):
             transcribe_bambara_audio(audio_file, language),
             status=status.HTTP_200_OK,
         )
+    except VoiceServiceStarting:
+        return Response(
+            {
+                "error": "Le service vocal démarre, veuillez réessayer dans quelques secondes.",
+                "code": "voice_service_starting",
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
     except RuntimeError as exc:
         response_status = (
             status.HTTP_503_SERVICE_UNAVAILABLE
@@ -299,6 +309,14 @@ def bambara_transcribe_view(request):
             else status.HTTP_502_BAD_GATEWAY
         )
         return Response({"error": str(exc)}, status=response_status)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def bambara_warm_view(request):
+    """Wake the (sleeping) voice service in the background."""
+    warm_up_async()
+    return Response({"status": "warming"}, status=status.HTTP_202_ACCEPTED)
 
 
 @api_view(['POST'])
