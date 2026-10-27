@@ -149,7 +149,9 @@ class BambaraVoiceServiceTest(TestCase):
             read=Mock(return_value=b"audio-bytes"),
         )
 
-        with patch("core.services.bambara_voice.requests.post", return_value=response) as post:
+        with patch("core.services.bambara_voice.wait_until_ready", return_value=True), patch(
+            "core.services.bambara_voice.requests.post", return_value=response
+        ) as post:
             result = bambara_voice.transcribe_bambara_audio(upload, "bm")
 
         self.assertEqual(result["text"], "I ni ce")
@@ -487,3 +489,47 @@ def test_get_facts_translated_deduplicates_translated_text(translator_cls):
     payload = json.loads(response.content)
     assert len(payload) == 2
     assert {item["texte"] for item in payload} == {"Texte commun", "Texte unique"}
+
+
+class BambaraReadinessTest(TestCase):
+    @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app")
+    def test_wait_until_ready_returns_true_after_two_failed_probes(self):
+        bad = Mock(status_code=502)
+        good = Mock(status_code=200)
+        with patch(
+            "core.services.bambara_voice.requests.get", side_effect=[bad, requests.exceptions.ConnectionError(), good]
+        ) as get, patch("core.services.bambara_voice.time.sleep") as sleep:
+            self.assertTrue(bambara_voice.wait_until_ready())
+
+        self.assertEqual(get.call_count, 3)
+        self.assertEqual(sleep.call_count, 2)
+        self.assertEqual(get.call_args.args[0], "https://ml-api.railway.app/health")
+        self.assertEqual(get.call_args.kwargs["timeout"], 5)
+
+    @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app")
+    def test_wait_until_ready_gives_up_when_budget_exhausted(self):
+        clock = {"now": 0.0}
+
+        def fake_sleep(seconds):
+            clock["now"] += seconds
+
+        with patch(
+            "core.services.bambara_voice.requests.get", return_value=Mock(status_code=502)
+        ), patch("core.services.bambara_voice.time.sleep", side_effect=fake_sleep), patch(
+            "core.services.bambara_voice.time.monotonic", side_effect=lambda: clock["now"]
+        ):
+            self.assertFalse(bambara_voice.wait_until_ready(budget_seconds=9, interval_seconds=3))
+
+    def test_transcribe_raises_when_not_ready_and_never_posts(self):
+        upload = SimpleNamespace(name="a.wav", content_type="audio/wav", read=Mock(return_value=b"x"))
+        with patch("core.services.bambara_voice.wait_until_ready", return_value=False), patch(
+            "core.services.bambara_voice.requests.post"
+        ) as post:
+            with self.assertRaises(bambara_voice.VoiceServiceStarting):
+                bambara_voice.transcribe_bambara_audio(upload, "bm")
+        post.assert_not_called()
+
+    @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app")
+    def test_warm_up_swallows_errors(self):
+        with patch("core.services.bambara_voice.requests.get", side_effect=RuntimeError("boom")):
+            self.assertIsNone(bambara_voice.warm_up())

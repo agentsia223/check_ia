@@ -3,6 +3,7 @@ import { render, screen, fireEvent, act, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import axios from "axios";
+import { toast } from "react-toastify";
 import SubmitFact from "./SubmitFact";
 import { AuthContext } from "../utils/AuthContext";
 import { API_BASE_URL } from "../config";
@@ -13,6 +14,8 @@ jest.mock("../utils/AuthContext", () => {
     const React = require("react");
     return { AuthContext: React.createContext() };
 });
+
+const postApi = jest.fn();
 
 const renderSubmitFact = () =>
     render(
@@ -73,21 +76,29 @@ beforeEach(() => {
         },
     });
     window.MediaRecorder = MockMediaRecorder;
+    postApi.mockReset();
+    // Warm-up calls to the voice service are routed away so they never consume
+    // the per-test queued responses.
     axios.post.mockReset();
+    axios.post.mockImplementation((url, ...rest) =>
+        url.endsWith("bambara/warm/")
+            ? Promise.resolve({ data: { status: "warming" } })
+            : postApi(url, ...rest)
+    );
     axios.get.mockResolvedValue({
         data: { statut: "en cours", web_sources: [], detailed_result: "" },
     });
 });
 
 test("manual submit posts the (French) claim to the submissions endpoint", async () => {
-    axios.post.mockResolvedValueOnce({ data: { id: 7 } });
+    postApi.mockResolvedValueOnce({ data: { id: 7 } });
     renderSubmitFact();
 
     await userEvent.type(screen.getByLabelText(CLAIM_LABEL), "La terre est ronde");
     await userEvent.click(screen.getByRole("button", { name: VERIFY_BUTTON }));
 
     await waitFor(() =>
-        expect(axios.post).toHaveBeenCalledWith(
+        expect(postApi).toHaveBeenCalledWith(
             `${API_BASE_URL}submissions/`,
             { texte: "La terre est ronde", source: "" },
             JSON_HEADERS
@@ -100,7 +111,7 @@ test("the result screen shows the evaluation line linking to the methodology", a
         cb();
         return 1;
     });
-    axios.post.mockResolvedValueOnce({ data: { id: 9 } });
+    postApi.mockResolvedValueOnce({ data: { id: 9 } });
     axios.get.mockResolvedValue({
         data: {
             statut: "vérifié",
@@ -132,7 +143,7 @@ test("statut erreur shows a technical-failure message, not a false verdict", asy
         cb();
         return 1;
     });
-    axios.post.mockResolvedValueOnce({ data: { id: 10 } });
+    postApi.mockResolvedValueOnce({ data: { id: 10 } });
     axios.get.mockResolvedValue({
         data: { statut: "erreur", web_sources: [], detailed_result: "" },
     });
@@ -160,7 +171,7 @@ test("statut indéterminé shows the abstention message, not a false verdict", a
         cb();
         return 1;
     });
-    axios.post.mockResolvedValueOnce({ data: { id: 11 } });
+    postApi.mockResolvedValueOnce({ data: { id: 11 } });
     axios.get.mockResolvedValue({
         data: { statut: "indéterminé", web_sources: [], detailed_result: "" },
     });
@@ -183,7 +194,7 @@ test("Bambara journey: the verdict is translated back to Bambara, with a toggle 
         cb();
         return 1;
     });
-    axios.post
+    postApi
         .mockResolvedValueOnce({ data: { id: 5 } }) // submit
         .mockResolvedValueOnce({ data: { translated_text: "Sankolo ka blen tigi" } }); // result FR→BM
     axios.get.mockResolvedValue({
@@ -207,7 +218,7 @@ test("Bambara journey: the verdict is translated back to Bambara, with a toggle 
     // Verdict auto-shows in Bambara.
     expect(await screen.findByText("Sankolo ka blen tigi")).toBeInTheDocument();
     expect(
-        axios.post.mock.calls.some(
+        postApi.mock.calls.some(
             ([url, body]) =>
                 url === `${API_BASE_URL}bambara/translate/` &&
                 body.source_lang === "fr" &&
@@ -292,7 +303,7 @@ describe("Language journeys", () => {
     });
 
     test("Bambara voice fills the claim with the translation and does NOT submit", async () => {
-        axios.post
+        postApi
             .mockResolvedValueOnce({ data: { text: "I ni ce" } })
             .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
         renderSubmitFact();
@@ -301,11 +312,11 @@ describe("Language journeys", () => {
 
         expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Merci");
         expect(screen.getByText(/traduit du bambara/i)).toBeInTheDocument();
-        expect(axios.post).toHaveBeenCalledTimes(2); // transcribe + translate, no submit
+        expect(postApi).toHaveBeenCalledTimes(2); // transcribe + translate, no submit
     });
 
     test("the user submits the dictated (and editable) text themselves", async () => {
-        axios.post
+        postApi
             .mockResolvedValueOnce({ data: { text: "I ni ce" } })
             .mockResolvedValueOnce({ data: { translated_text: "Merci" } })
             .mockResolvedValueOnce({ data: { id: 42 } });
@@ -318,7 +329,7 @@ describe("Language journeys", () => {
             fireEvent.click(screen.getByRole("button", { name: VERIFY_BUTTON }));
         });
 
-        expect(axios.post).toHaveBeenNthCalledWith(
+        expect(postApi).toHaveBeenNthCalledWith(
             3,
             `${API_BASE_URL}submissions/`,
             { texte: "Merci", source: "" },
@@ -327,23 +338,23 @@ describe("Language journeys", () => {
     });
 
     test("does not fill the claim when the transcription is empty", async () => {
-        axios.post.mockResolvedValueOnce({ data: { text: "   " } });
+        postApi.mockResolvedValueOnce({ data: { text: "   " } });
         renderSubmitFact();
 
         await record(500);
 
         expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("");
-        expect(axios.post).toHaveBeenCalledTimes(1);
+        expect(postApi).toHaveBeenCalledTimes(1);
     });
 
     test("does not fill the claim when transcription fails", async () => {
-        axios.post.mockRejectedValueOnce(new Error("network"));
+        postApi.mockRejectedValueOnce(new Error("network"));
         renderSubmitFact();
 
         await record(500);
 
         expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("");
-        expect(axios.post).toHaveBeenCalledTimes(1);
+        expect(postApi).toHaveBeenCalledTimes(1);
     });
 
     test("ignores a recording shorter than the minimum duration", async () => {
@@ -351,11 +362,11 @@ describe("Language journeys", () => {
 
         await record(MIN_RECORDING_MS - 1);
 
-        expect(axios.post).not.toHaveBeenCalled();
+        expect(postApi).not.toHaveBeenCalled();
     });
 
     test("spacebar toggles recording in the voice sub-mode", async () => {
-        axios.post
+        postApi
             .mockResolvedValueOnce({ data: { text: "I ni ce" } })
             .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
         renderSubmitFact();
@@ -388,7 +399,7 @@ describe("Language journeys", () => {
         expect(
             screen.queryByRole("button", { name: /arrêter l'enregistrement/i })
         ).not.toBeInTheDocument();
-        expect(axios.post).not.toHaveBeenCalled();
+        expect(postApi).not.toHaveBeenCalled();
     });
 
     test("spacebar does not start recording while typing in the claim field", async () => {
@@ -406,7 +417,7 @@ describe("Language journeys", () => {
 
     test("touch: press-and-hold dictates and fills the claim", async () => {
         mockCoarsePointer();
-        axios.post
+        postApi
             .mockResolvedValueOnce({ data: { text: "I ni ce" } })
             .mockResolvedValueOnce({ data: { translated_text: "Merci" } });
         renderSubmitFact();
@@ -424,7 +435,7 @@ describe("Language journeys", () => {
         });
 
         expect(screen.getByLabelText(CLAIM_LABEL)).toHaveValue("Merci");
-        expect(axios.post).toHaveBeenCalledTimes(2);
+        expect(postApi).toHaveBeenCalledTimes(2);
     });
 
     test("touch: a fast tap (release before the mic resolves) does not get stuck recording", async () => {
@@ -451,6 +462,52 @@ describe("Language journeys", () => {
         expect(
             screen.getByRole("button", { name: /enregistrer en bambara/i })
         ).not.toBeDisabled();
-        expect(axios.post).not.toHaveBeenCalled();
+        expect(postApi).not.toHaveBeenCalled();
     });
+});
+
+test("switching to Bambara warms up the voice service (once, not for French)", async () => {
+    renderSubmitFact();
+    expect(axios.post).not.toHaveBeenCalled();
+
+    await selectLanguage(/^bambara$/i);
+
+    expect(axios.post).toHaveBeenCalledWith(`${API_BASE_URL}bambara/warm/`, null, {
+        headers: { Authorization: "Bearer access-token" },
+    });
+    expect(axios.post).toHaveBeenCalledTimes(1);
+});
+
+test("a 503 'voice_service_starting' transcription error shows the starting toast", async () => {
+    jest.useFakeTimers();
+    postApi.mockRejectedValueOnce({
+        response: { status: 503, data: { code: "voice_service_starting" } },
+    });
+    const errorSpy = jest.spyOn(toast, "error").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    renderSubmitFact();
+
+    await record(500);
+
+    expect(errorSpy).toHaveBeenCalledWith(
+        "Le service vocal démarre, réessayez dans quelques secondes."
+    );
+    jest.clearAllTimers();
+    jest.useRealTimers();
+});
+
+test("a 502 transcription error shows the temporarily-unavailable toast", async () => {
+    jest.useFakeTimers();
+    postApi.mockRejectedValueOnce({ response: { status: 502, data: {} } });
+    const errorSpy = jest.spyOn(toast, "error").mockImplementation(() => {});
+    jest.spyOn(console, "error").mockImplementation(() => {});
+    renderSubmitFact();
+
+    await record(500);
+
+    expect(errorSpy).toHaveBeenCalledWith(
+        "Le service vocal est temporairement indisponible. Réessayez dans un instant."
+    );
+    jest.clearAllTimers();
+    jest.useRealTimers();
 });

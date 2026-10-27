@@ -1,3 +1,4 @@
+from core.services.bambara_voice import VoiceServiceStarting
 import uuid
 from unittest.mock import Mock, patch
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -129,6 +130,30 @@ class BambaraVoiceViewTest(TestCase):
         uploaded_file = transcribe_bambara_audio.call_args.args[0]
         self.assertEqual(uploaded_file.name, "claim.wav")
         self.assertEqual(transcribe_bambara_audio.call_args.args[1], "bm")
+
+    @patch("core.views.transcribe_bambara_audio", Mock(side_effect=VoiceServiceStarting()))
+    def test_transcribe_returns_503_while_voice_service_starts(self):
+        self.client.force_authenticate(user=self.mock_user)
+        audio = SimpleUploadedFile("claim.wav", b"audio-bytes", content_type="audio/wav")
+
+        response = self.client.post(
+            "/api/bambara/transcribe/",
+            {"file": audio, "language": "bm"},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(response.data["code"], "voice_service_starting")
+
+    @patch("core.views.warm_up_async")
+    def test_warm_returns_202_and_triggers_warm_up(self, warm_up_async):
+        self.client.force_authenticate(user=self.mock_user)
+
+        response = self.client.post("/api/bambara/warm/")
+
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.data, {"status": "warming"})
+        warm_up_async.assert_called_once_with()
 
     @patch("core.views.transcribe_bambara_audio", Mock(side_effect=RuntimeError("Bambara API is not configured")))
     def test_transcribe_reports_configuration_errors(self):

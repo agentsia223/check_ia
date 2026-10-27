@@ -1,4 +1,5 @@
 import logging
+import threading
 import time
 from urllib.parse import urljoin
 
@@ -31,6 +32,56 @@ def _headers():
 
 def _timeout():
     return getattr(settings, "BAMBARA_API_TIMEOUT", 60)
+
+
+class VoiceServiceStarting(RuntimeError):
+    """The voice service is asleep and did not become ready in time."""
+
+    def __init__(self, message="Voice service is starting"):
+        super().__init__(message)
+
+
+_HEALTH_TIMEOUT = 5
+
+
+def _probe_health():
+    response = requests.get(
+        urljoin(_base_url(), "health"),
+        headers=_headers(),
+        timeout=_HEALTH_TIMEOUT,
+    )
+    return response.status_code == 200
+
+
+def wait_until_ready(budget_seconds=90, interval_seconds=3):
+    """Poll the voice service health endpoint until it answers 200 or the budget runs out."""
+    deadline = time.monotonic() + budget_seconds
+    warned = False
+    while True:
+        try:
+            if _probe_health():
+                return True
+        except Exception as exc:  # any probe failure means "not ready"
+            logger.debug("Voice service health probe failed: %s", exc)
+        if not warned:
+            logger.warning("Voice service not ready (asleep?); waiting up to %ss", budget_seconds)
+            warned = True
+        if time.monotonic() + interval_seconds >= deadline:
+            logger.warning("Voice service still not ready after %ss; giving up", budget_seconds)
+            return False
+        time.sleep(interval_seconds)
+
+
+def warm_up():
+    """Fire a single health request to wake the service; never raises."""
+    try:
+        _probe_health()
+    except Exception as exc:
+        logger.debug("Voice service warm-up failed: %s", exc)
+
+
+def warm_up_async():
+    threading.Thread(target=warm_up, daemon=True).start()
 
 
 _RETRYABLE_STATUSES = (502, 503, 504)
@@ -108,6 +159,9 @@ def translate_bambara_text(text, source_lang="bm", target_lang="fr"):
 
 
 def transcribe_bambara_audio(uploaded_file, language="bm"):
+    if not wait_until_ready():
+        raise VoiceServiceStarting()
+
     filename = getattr(uploaded_file, "name", "audio")
     content_type = getattr(uploaded_file, "content_type", "application/octet-stream")
     file_bytes = uploaded_file.read()
