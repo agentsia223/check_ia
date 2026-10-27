@@ -131,7 +131,7 @@ class BambaraVoiceServiceTest(TestCase):
             "https://ml-api.railway.app/translate",
             json={"text": "I ni ce", "source_lang": "bm", "target_lang": "fr"},
             headers={},
-            timeout=60,
+            timeout=120,
         )
 
     @override_settings(BAMBARA_API_BASE_URL="https://ml-api.railway.app", BAMBARA_API_KEY="secret")
