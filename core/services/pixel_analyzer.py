@@ -11,6 +11,7 @@ To remove: delete this file and remove the import in image_verification.py.
 import logging
 import os
 import requests
+from core.services.log_safety import loggable_url
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ def detect_ai_image(image_url):
         return {"success": False, "ai_score": None, "error": "Credentials not configured"}
 
     try:
-        logger.info(f"Pixel analyzer: analyzing image {image_url[:80]}...")
+        logger.info(f"Pixel analyzer: analyzing image {loggable_url(image_url)}")
 
         params = {
             "url": image_url,
