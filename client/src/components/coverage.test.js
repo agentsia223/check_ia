@@ -60,8 +60,16 @@ const renderWithAuth = (ui, value = authValue()) =>
         </AuthContext.Provider>
     );
 
+// The check page also posts a wake-up call when it opens; answer by URL so that call never
+// takes the response meant for the submission.
+const mockSubmissionPost = (id) =>
+    axios.post.mockImplementation((url) =>
+        Promise.resolve(url.endsWith("verdict/warm/") ? { data: {} } : { data: { id } })
+    );
+
 beforeEach(() => {
     jest.clearAllMocks();
+    axios.post.mockReset();
     supabase.auth.getSession.mockResolvedValue({
         data: { session: { access_token: "test-token" } },
     });
@@ -249,7 +257,7 @@ test("submit fact requires auth and posts claims for authenticated users", async
 
     expect(screen.getByRole("heading", { name: /accès requis/i })).toBeInTheDocument();
 
-    axios.post.mockResolvedValueOnce({ data: { id: 42 } });
+    mockSubmissionPost(42);
 
     rerender(
         <AuthContext.Provider value={authValue()}>
@@ -276,7 +284,7 @@ test("submit fact polls completed submissions and renders verified sources", asy
         callback();
         return 1;
     });
-    axios.post.mockResolvedValueOnce({ data: { id: 42 } });
+    mockSubmissionPost(42);
     axios.get.mockResolvedValueOnce({
         data: {
             statut: "vérifié",
@@ -316,7 +324,7 @@ test("submit fact clears previous results when the claim changes and handles pol
         callback();
         return 1;
     });
-    axios.post.mockResolvedValueOnce({ data: { id: 51 } });
+    mockSubmissionPost(51);
     axios.get.mockRejectedValueOnce(new Error("poll failed"));
 
     renderWithAuth(<SubmitFact />);
