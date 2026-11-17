@@ -5,6 +5,7 @@ from datetime import datetime
 from django.conf import settings
 from supabase import create_client, Client
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
+from core.services.log_safety import loggable_url
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +90,7 @@ def upload_image_to_supabase(image_file, user_id, verification_type="general"):
             if signed_url.endswith('?'):
                 signed_url = signed_url[:-1]
         
-        logger.info(f"URL générée: {signed_url}")
+        logger.info(f"URL générée: {loggable_url(signed_url)}")
         
         return {
             "success": True,
@@ -164,7 +165,7 @@ def get_image_url_from_supabase(file_path, bucket_name="image-verifications"):
             if signed_url.endswith('?'):
                 signed_url = signed_url[:-1]
         
-        logger.info(f"URL récupérée pour {file_path}: {signed_url}")
+        logger.info(f"URL récupérée pour {file_path}: {loggable_url(signed_url)}")
         return signed_url
         
     except Exception as e:

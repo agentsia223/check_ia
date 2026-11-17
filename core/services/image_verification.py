@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from io import BytesIO
 from PIL import Image
 import json
+from core.services.log_safety import loggable_url
 
 load_dotenv()
 
@@ -27,7 +28,7 @@ def encode_image_url_to_base64(image_url):
     Download an image from URL and encode it to base64
     """
     try:
-        logging.info(f"Downloading image from: {image_url}")
+        logging.info(f"Downloading image from: {loggable_url(image_url)}")
 
         response = requests.get(image_url, timeout=30)
 
@@ -227,7 +228,7 @@ def detect_ai_generated_image(image_url):
     """
     try:
         logging.info("=== AI DETECTION START ===")
-        logging.info(f"Image URL: {image_url}")
+        logging.info(f"Image URL: {loggable_url(image_url)}")
 
         # Step 1: Pixel-level detection (optional)
         pixel_score = _run_pixel_analyzer(image_url)
@@ -393,7 +394,7 @@ def verify_image_content(image_url, claim_text=""):
     """
     try:
         logging.info("=== IMAGE CONTENT VERIFICATION START ===")
-        logging.info(f"Image URL: {image_url}")
+        logging.info(f"Image URL: {loggable_url(image_url)}")
         logging.info(f"Claim text: {claim_text}")
 
         from datetime import datetime
