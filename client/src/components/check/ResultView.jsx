@@ -12,6 +12,7 @@ import { getRelated } from "../../lib/checks";
 import { checkKeys } from "../../lib/queryKeys";
 import { formatDateFr, formatDateShortFr, plural } from "../../lib/format";
 import { SCALE, kindLabel, verdictInfo } from "../../lib/verdict";
+import { boldSegments } from "../../lib/explanation";
 import styles from "./ResultView.module.css";
 
 const SEGMENTS = 5;
@@ -159,7 +160,11 @@ const ResultView = forwardRef(function ResultView({ check, elapsedSeconds, isLog
                             </h2>
                             <div className={styles.why}>
                                 {why.map((text, index) => (
-                                    <p key={index}>{text}</p>
+                                    <p key={index}>
+                                        {boldSegments(text).map((segment, at) =>
+                                            segment.strong ? <strong key={at}>{segment.text}</strong> : segment.text
+                                        )}
+                                    </p>
                                 ))}
                             </div>
                         </section>

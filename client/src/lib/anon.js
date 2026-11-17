@@ -42,3 +42,16 @@ export function getAnonToken() {
         return memoryToken;
     }
 }
+
+/**
+ * Forget this browser's anonymous token. Called once its checks have been claimed by an
+ * account: the server no longer knows the token, so sending it again would be a wasted call.
+ */
+export function forgetAnonToken() {
+    memoryToken = null;
+    try {
+        window.localStorage.removeItem(ANON_STORAGE_KEY);
+    } catch {
+        // Storage blocked: the in-memory token is already gone.
+    }
+}

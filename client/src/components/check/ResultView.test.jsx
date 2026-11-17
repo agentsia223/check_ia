@@ -110,3 +110,9 @@ test("no related section when there are none", async () => {
     expect(getRelated).toHaveBeenCalled();
     expect(screen.queryByRole("region", { name: "Vérifications proches" })).not.toBeInTheDocument();
 });
+
+test("shows Markdown bold from the model as real emphasis, without asterisks", () => {
+    renderView({ ...base, explanation: "1. **Inscriptions** : lisibles." });
+    expect(screen.getByText("Inscriptions").tagName).toBe("STRONG");
+    expect(screen.queryByText(/\*\*/)).not.toBeInTheDocument();
+});

@@ -37,3 +37,12 @@ test("still returns a stable token when storage is unavailable", () => {
     expect(hasAnonToken()).toBe(true);
     spy.mockRestore();
 });
+
+test("forgetAnonToken removes the stored token so nothing is left to claim", async () => {
+    const { getAnonToken, hasAnonToken, forgetAnonToken } = await import("./anon");
+    const first = getAnonToken();
+    expect(hasAnonToken()).toBe(true);
+    forgetAnonToken();
+    expect(hasAnonToken()).toBe(false);
+    expect(getAnonToken()).not.toBe(first);
+});

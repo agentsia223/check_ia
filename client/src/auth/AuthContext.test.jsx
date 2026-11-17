@@ -202,8 +202,10 @@ describe("claiming anonymous checks on sign-in", () => {
         await settle();
         expect(claimAnonChecks).toHaveBeenCalledTimes(1);
 
+        // The token is forgotten once claimed, so a later sign-in has nothing left to claim.
         act(() => authListener("SIGNED_IN", signedIn("other")));
-        await waitFor(() => expect(claimAnonChecks).toHaveBeenCalledTimes(2));
+        await settle();
+        expect(claimAnonChecks).toHaveBeenCalledTimes(1);
     });
 
     test("other auth events do not claim", async () => {

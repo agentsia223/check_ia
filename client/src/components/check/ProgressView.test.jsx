@@ -93,3 +93,13 @@ test("an image check shows its thumbnail", () => {
     );
     expect(screen.getByRole("img", { name: "Image envoyée pour la vérification" })).toHaveAttribute("src", "/media/x.jpg");
 });
+
+test.each([
+    ["image_content", "Analyse du contenu"],
+    ["image_ai", "Recherche d'indices de génération par IA"],
+])("a %s check names its own steps, not the source search", (kind, step) => {
+    renderView({ check: { ...check, kind, claim: "" }, elapsedSeconds: 3 });
+    expect(stepClass(step)).toContain("current");
+    expect(screen.queryByText("Recherche de sources")).not.toBeInTheDocument();
+    expect(screen.getByText(`Étape en cours : ${step}`)).toBeInTheDocument();
+});

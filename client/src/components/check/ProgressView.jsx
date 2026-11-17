@@ -15,6 +15,25 @@ export const STEPS = Object.freeze([
     "Verdict",
 ]);
 
+/** Image checks search no sources: their steps say what the analysis really does. */
+const IMAGE_STEPS = Object.freeze({
+    image_content: Object.freeze([
+        "Lecture de l'image",
+        "Analyse du contenu",
+        "Comparaison avec le texte reçu",
+        "Verdict",
+    ]),
+    image_ai: Object.freeze([
+        "Lecture de l'image",
+        "Recherche d'indices de génération par IA",
+        "Évaluation des indices",
+        "Verdict",
+    ]),
+});
+
+/** Step names for a kind of check. @param {string} [kind] @returns {readonly string[]} */
+export const stepsFor = (kind) => IMAGE_STEPS[kind] ?? STEPS;
+
 /** Seconds after which steps 1 and 2 are shown as done. */
 const READ_DONE_AT = 2;
 const SEARCH_DONE_AT = 12;
@@ -50,6 +69,7 @@ export default function ProgressView({
 }) {
     const [cancelling, setCancelling] = useState(false);
     const [cancelError, setCancelError] = useState("");
+    const steps = stepsFor(check.kind);
     const states = stepStates(elapsedSeconds, finished);
     const currentIndex = states.indexOf("current");
     const progress = Math.min(elapsedSeconds / Math.max(medianSeconds, 1), 0.95);
@@ -73,7 +93,7 @@ export default function ProgressView({
                 <CheckClaim check={check} />
 
                 <ol className={styles.steps} role="list">
-                    {STEPS.map((step, index) => (
+                    {steps.map((step, index) => (
                         <li
                             key={step}
                             className={[styles.step, styles[states[index]]].join(" ")}
@@ -117,7 +137,7 @@ export default function ProgressView({
                 )}
 
                 <p className="sr-only" aria-live="polite">
-                    {currentIndex >= 0 ? `Étape en cours : ${STEPS[currentIndex]}` : ""}
+                    {currentIndex >= 0 ? `Étape en cours : ${steps[currentIndex]}` : ""}
                 </p>
             </div>
 

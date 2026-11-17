@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { QueryClientContext } from "@tanstack/react-query";
 import { SESSION_KEY_PATTERN, getSupabase, mayHaveSession } from "../lib/supabase";
 import { claimAnonChecks } from "../lib/checks";
-import { hasAnonToken } from "../lib/anon";
+import { forgetAnonToken, hasAnonToken } from "../lib/anon";
 
 /**
  * Auth context value (see useAuth). Exported so tests can provide a fake value:
@@ -24,6 +24,8 @@ const failure = async (error) => {
 async function claimQuietly() {
     try {
         await claimAnonChecks();
+        // Claimed: the token has done its job. Keeping it would re-send a claim on every visit.
+        forgetAnonToken();
     } catch {
         // Claiming is best effort: the check stays reachable by its link.
     }
