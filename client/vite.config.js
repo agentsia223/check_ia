@@ -49,6 +49,40 @@ export default defineConfig(({ mode }) => {
         },
     };
 
+    // The three entry routes are separate chunks, which the browser would only discover
+    // after downloading and running the main bundle. This inline script starts the right
+    // one (with its own imports and styles) while the main bundle is still downloading,
+    // which takes one network round trip off the first paint of the page content.
+    const ENTRY_ROUTES = { home: "/pages/Home.jsx", check: "/pages/CheckPage.jsx", library: "/pages/Library.jsx" };
+    const preloadRouteChunk = {
+        name: "check-ia:preload-route-chunk",
+        apply: "build",
+        transformIndexHtml: {
+            order: "post",
+            handler(_html, context) {
+                const bundle = context.bundle ?? {};
+                const chunks = Object.values(bundle).filter((file) => file.type === "chunk");
+                const entryImports = new Set(chunks.filter((chunk) => chunk.isEntry).flatMap((chunk) => [chunk.fileName, ...chunk.imports]));
+                const files = {};
+                for (const [route, suffix] of Object.entries(ENTRY_ROUTES)) {
+                    const chunk = chunks.find((candidate) => (candidate.facadeModuleId ?? "").endsWith(suffix));
+                    if (!chunk) continue;
+                    const scripts = [chunk.fileName, ...chunk.imports].filter((file) => !entryImports.has(file));
+                    const styles = [...(chunk.viteMetadata?.importedCss ?? [])];
+                    files[route] = [...scripts, ...styles].map((file) => `/${file}`);
+                }
+                if (Object.keys(files).length === 0) return [];
+                const script =
+                    `(function(){var f=${JSON.stringify(files)},p=location.pathname,` +
+                    `k=p==="/"?"home":p.indexOf("/v/")===0?"check":p==="/bibliotheque"?"library":"";` +
+                    `(f[k]||[]).forEach(function(h){var l=document.createElement("link");` +
+                    `if(/\\.css$/.test(h)){l.rel="preload";l.as="style"}else{l.rel="modulepreload";l.crossOrigin=""}` +
+                    `l.href=h;document.head.appendChild(l)})})();`;
+                return [{ tag: "script", children: script, injectTo: "head-prepend" }];
+            },
+        },
+    };
+
     const origin = apiOrigin(env.REACT_APP_API_URL || "http://localhost:8000/api/");
 
     // Service worker: precache the app shell and the hashed assets so repeat visits open
@@ -89,7 +123,7 @@ export default defineConfig(({ mode }) => {
     });
 
     return {
-        plugins: [react(), dropMockApi, preloadFonts, pwa],
+        plugins: [react(), dropMockApi, preloadFonts, preloadRouteChunk, pwa],
         envPrefix: ["VITE_", "REACT_APP_"],
         define: {
             // Always define the flag so production builds constant-fold

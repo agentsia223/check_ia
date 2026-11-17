@@ -6,6 +6,10 @@
 
 .main {
   flex: 1 0 auto;
+  /* Keep the footer below the first screen. Pages load in steps (route chunk, then data):
+     a footer visible under a half-empty page gets pushed down when the content arrives,
+     which reads as the page jumping (measured layout shift 0.5 to 0.6 without this). */
+  min-height: 100vh;
 }
 
 .main:focus {
