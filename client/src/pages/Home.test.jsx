@@ -6,7 +6,7 @@ import Home from "./Home";
 import { AuthContext } from "../auth/AuthContext";
 import { createQueryClient } from "../lib/queryClient";
 import { listChecks } from "../lib/checks";
-import { ApiError } from "../lib/api";
+import { ApiError, apiFetch } from "../lib/api";
 import { fiabilite, pctFr } from "../data/fiabilite";
 
 vi.mock("../lib/checks", () => ({
@@ -161,4 +161,15 @@ test("sections come in the order headline, lede, composer, facts, recent, reliab
         expect(order[i - 1].compareDocumentPosition(order[i]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     }
     await screen.findByText(/les vérifications publiées apparaîtront ici/i);
+});
+
+test("wakes the verdict model when a signed-in user opens the page, and only then", async () => {
+    listChecks.mockResolvedValue(page([]));
+    apiFetch.mockClear();
+    const { unmount } = renderHome();
+    expect(apiFetch).not.toHaveBeenCalledWith("verdict/warm/", expect.anything());
+    unmount();
+
+    renderHome(authValue({ isLoggedIn: true, user: { id: "u1", email: "a@b.c" } }));
+    expect(apiFetch).toHaveBeenCalledWith("verdict/warm/", { method: "POST" });
 });

@@ -102,6 +102,13 @@ BAMBARA_API_TIMEOUT = int(os.getenv('BAMBARA_API_TIMEOUT', '120'))
 GOOGLE_TRANSLATE_API_KEY = os.getenv('GOOGLE_TRANSLATE_API_KEY', '')
 GOOGLE_TRANSLATE_TIMEOUT = int(os.getenv('GOOGLE_TRANSLATE_TIMEOUT', '15'))
 
+# Verdict engine: 'gpt' (GPT-4o-mini via OpenRouter) or 'llama' (the fine-tuned Check-IA
+# model on the private llama-factcheck service, with GPT-4o-mini as fallback and safeguard).
+VERDICT_ENGINE = os.getenv('VERDICT_ENGINE', 'gpt').strip().lower()
+LLAMA_BASE_URL = os.getenv('LLAMA_BASE_URL', '')
+LLAMA_TIMEOUT = int(os.getenv('LLAMA_TIMEOUT', '30'))
+LLAMA_WAKE_WAIT = int(os.getenv('LLAMA_WAKE_WAIT', '15'))
+
 
 # Configuration internationale
 LANGUAGE_CODE = 'en-us'

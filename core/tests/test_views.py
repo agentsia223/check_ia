@@ -155,6 +155,25 @@ class BambaraVoiceViewTest(TestCase):
         self.assertEqual(response.data, {"status": "warming"})
         warm_up_async.assert_called_once_with()
 
+    @patch("core.views.llama_verdict.warm_up_async")
+    def test_verdict_warm_wakes_the_model_only_when_it_is_the_engine(self, warm_up_async):
+        self.client.force_authenticate(user=self.mock_user)
+
+        with self.settings(VERDICT_ENGINE="gpt"):
+            response = self.client.post("/api/verdict/warm/")
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        warm_up_async.assert_not_called()
+
+        with self.settings(VERDICT_ENGINE="llama"):
+            response = self.client.post("/api/verdict/warm/")
+        self.assertEqual(response.status_code, status.HTTP_202_ACCEPTED)
+        self.assertEqual(response.data, {"status": "warming"})
+        warm_up_async.assert_called_once_with()
+
+    def test_verdict_warm_requires_authentication(self):
+        response = self.client.post("/api/verdict/warm/")
+        self.assertIn(response.status_code, (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN))
+
     @patch("core.views.transcribe_bambara_audio", Mock(side_effect=RuntimeError("Bambara API is not configured")))
     def test_transcribe_reports_configuration_errors(self):
         self.client.force_authenticate(user=self.mock_user)

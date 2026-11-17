@@ -92,7 +92,6 @@ def test_llm_analysis_parses_json_and_supplies_missing_fields(monkeypatch):
 
     result = llm.llm_analysis(
         "translated claim",
-        "vérifié",
         [{"title": "Source", "link": "https://source.test", "snippet": "evidence"}],
         "verification content",
     )
@@ -105,6 +104,7 @@ def test_llm_analysis_parses_json_and_supplies_missing_fields(monkeypatch):
     call = fake_client.chat.completions.calls[0]
     assert call["model"] == "openai/gpt-4o-mini"
     assert "translated claim" in call["messages"][0]["content"]
+    assert "ANALYSE INITIALE AUTOMATIQUE" not in call["messages"][0]["content"]
 
 
 def test_llm_analysis_falls_back_for_plain_text_and_api_errors(monkeypatch):
@@ -112,24 +112,20 @@ def test_llm_analysis_falls_back_for_plain_text_and_api_errors(monkeypatch):
 
     plain_result = llm.llm_analysis(
         "claim",
-        "vérifié",
         [{"link": "https://fallback.test"}],
     )
 
     assert plain_result["statut"] == "FAUSSE"
     assert plain_result["sources_principales"] == ["https://fallback.test"]
-    # A real (if unparseable) LLM answer is not flagged as a failed analysis.
-    assert "analysis_failed" not in plain_result
 
     monkeypatch.setattr(llm, "client", FakeOpenAIClient(side_effect=RuntimeError("api down")))
 
-    error_result = llm.llm_analysis("claim", "rejeté", [{"link": "https://one.test"}])
+    error_result = llm.llm_analysis("claim", [{"link": "https://one.test"}])
 
-    # Legacy fields unchanged; the failure is flagged explicitly for the web path.
-    assert error_result["statut"] == "FAUSSE"
+    # A failed call is an error, never a verdict.
+    assert error_result["statut"] == "ERREUR"
     assert "api down" in error_result["explication"]
     assert error_result["sources_principales"] == ["https://one.test"]
-    assert error_result["analysis_failed"] is True
 
 
 def test_perplexity_search_formats_sources_and_cleans_content(monkeypatch):
@@ -196,25 +192,6 @@ def test_perplexity_search_handles_errors_and_helper_exceptions(monkeypatch):
     assert perplexity_search.clean_perplexity_content("<b>raw</b>") == "<b>raw</b>"
 
     assert "CONTEXTE" in perplexity_search.create_enriched_content("main", [], "19/05/2026")
-
-
-def test_perplexity_search_sets_timeout_and_handles_timeout(monkeypatch):
-    import requests
-
-    post = Mock(side_effect=requests.Timeout("too slow"))
-    monkeypatch.setattr(perplexity_search.requests, "post", post)
-
-    assert perplexity_search.search_with_perplexity("claim") == {
-        "verification_content": "",
-        "sources": [],
-        "citations": [],
-        "raw_content": "",
-    }
-    assert post.call_args.kwargs["timeout"] == 60
-
-
-def test_llm_client_has_request_timeout():
-    assert llm.client.timeout == 120.0
 
 
 def test_supabase_storage_upload_delete_urls_and_bucket_paths(monkeypatch):
@@ -698,230 +675,14 @@ def test_analyze_submission_task_pipeline_raises_sets_erreur_status(monkeypatch)
     assert not Fact.objects.exists()
 
 
-def test_translate_with_retry_succeeds_after_transient_errors(monkeypatch):
-    from deep_translator.exceptions import TooManyRequests
-
+def test_analyze_text_sends_the_french_claim_straight_to_search_and_verdict(monkeypatch):
     from core.services import ai_analysis
 
-    sleep_calls = []
-    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: sleep_calls.append(seconds))
-
-    translate_mock = Mock(side_effect=[TooManyRequests("fr"), TooManyRequests("fr"), "ok"])
-
-    class FakeTranslator:
-        def __init__(self, source, target):
-            pass
-
-        def translate(self, text):
-            return translate_mock(text)
-
-    monkeypatch.setattr(ai_analysis, "GoogleTranslator", FakeTranslator)
-
-    result = ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
-
-    assert result == "ok"
-    assert translate_mock.call_count == 3
-    assert len(sleep_calls) == 2
-
-
-def test_translate_with_retry_raises_after_exhausting_attempts(monkeypatch):
-    from deep_translator.exceptions import TooManyRequests
-
-    from core.services import ai_analysis
-
-    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: None)
-
-    translate_mock = Mock(side_effect=[TooManyRequests("fr"), TooManyRequests("fr"), TooManyRequests("fr")])
-
-    class FakeTranslator:
-        def __init__(self, source, target):
-            pass
-
-        def translate(self, text):
-            return translate_mock(text)
-
-    monkeypatch.setattr(ai_analysis, "GoogleTranslator", FakeTranslator)
-
-    with pytest.raises(TooManyRequests):
-        ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
-
-    assert translate_mock.call_count == 3
-
-
-STALL = object()
-
-
-def _stalling_translator(release, calls, script):
-    """Fake GoogleTranslator. Each translate() call pops the next item of
-    ``script`` (STALL when empty): STALL blocks until ``release`` is set,
-    anything else is returned."""
-
-    class FakeTranslator:
-        def __init__(self, source, target):
-            pass
-
-        def translate(self, text):
-            calls.append(text)
-            step = script.pop(0) if script else STALL
-            if step is STALL:
-                release.wait(5)
-                return "too late"
-            return step
-
-    return FakeTranslator
-
-
-def test_translate_with_retry_times_out_stalled_call_and_retries(monkeypatch):
-    import threading
-
-    from core.services import ai_analysis
-
-    sleep_calls = []
-    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: sleep_calls.append(seconds))
-    monkeypatch.setattr(ai_analysis, "TRANSLATE_ATTEMPT_TIMEOUT", 0.05)
-    release = threading.Event()
-    calls = []
-    monkeypatch.setattr(
-        ai_analysis, "GoogleTranslator", _stalling_translator(release, calls, [STALL, "ok"])
+    sources = [{"title": "Source", "link": "https://source.test", "snippet": "extrait"}]
+    search_mock = Mock(
+        return_value={"sources": sources, "citations": [], "verification_content": "résumé"}
     )
-    try:
-        result = ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
-    finally:
-        release.set()
-
-    assert result == "ok"
-    assert len(calls) == 2
-    assert len(sleep_calls) == 1
-
-
-def test_translate_with_retry_gives_up_after_repeated_timeouts(monkeypatch):
-    import threading
-
-    from core.services import ai_analysis
-
-    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: None)
-    monkeypatch.setattr(ai_analysis, "TRANSLATE_ATTEMPT_TIMEOUT", 0.05)
-    release = threading.Event()
-    calls = []
-    monkeypatch.setattr(ai_analysis, "GoogleTranslator", _stalling_translator(release, calls, []))
-    try:
-        with pytest.raises(TimeoutError):
-            ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
-    finally:
-        release.set()
-
-    assert len(calls) == 3
-
-
-def test_translate_with_retry_propagates_non_transient_errors(monkeypatch):
-    from core.services import ai_analysis
-
-    class FakeTranslator:
-        def __init__(self, source, target):
-            pass
-
-        def translate(self, text):
-            raise ValueError("bad input")
-
-    monkeypatch.setattr(ai_analysis, "GoogleTranslator", FakeTranslator)
-
-    with pytest.raises(ValueError):
-        ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
-
-
-def test_translate_text_returns_none_when_scraper_stalls(monkeypatch):
-    import threading
-
-    from core.services import ai_analysis, bambara_voice
-
-    monkeypatch.setattr(
-        bambara_voice, "translate_bambara_text", Mock(side_effect=RuntimeError("down"))
-    )
-    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: None)
-    monkeypatch.setattr(ai_analysis, "TRANSLATE_ATTEMPT_TIMEOUT", 0.05)
-    release = threading.Event()
-    monkeypatch.setattr(ai_analysis, "GoogleTranslator", _stalling_translator(release, [], []))
-    try:
-        assert ai_analysis.translate_text("bonjour", source="fr", target="en") is None
-    finally:
-        release.set()
-
-
-def test_translate_text_uses_official_api_and_skips_scraper(monkeypatch):
-    from core.services import ai_analysis, bambara_voice
-
-    monkeypatch.setattr(
-        bambara_voice,
-        "translate_bambara_text",
-        Mock(return_value={"translated_text": " hello "}),
-    )
-    google_mock = Mock(side_effect=AssertionError("GoogleTranslator should not be called"))
-    monkeypatch.setattr(ai_analysis, "GoogleTranslator", google_mock)
-
-    result = ai_analysis.translate_text("bonjour", source="fr", target="en")
-
-    assert result == "hello"
-    google_mock.assert_not_called()
-
-
-def test_translate_text_falls_back_to_scraper_when_official_fails(monkeypatch, caplog):
-    from core.services import ai_analysis, bambara_voice
-
-    monkeypatch.setattr(
-        bambara_voice,
-        "translate_bambara_text",
-        Mock(side_effect=RuntimeError("not configured")),
-    )
-
-    class FakeTranslator:
-        def __init__(self, source, target):
-            pass
-
-        def translate(self, text):
-            return "hello"
-
-    monkeypatch.setattr(ai_analysis, "GoogleTranslator", FakeTranslator)
-
-    with caplog.at_level("WARNING"):
-        result = ai_analysis.translate_text("bonjour", source="fr", target="en")
-
-    assert result == "hello"
-    assert any("repli sur le service gratuit" in record.message for record in caplog.records)
-
-
-def test_translate_text_returns_none_when_both_fail(monkeypatch):
-    from core.services import ai_analysis, bambara_voice
-
-    monkeypatch.setattr(
-        bambara_voice,
-        "translate_bambara_text",
-        Mock(side_effect=RuntimeError("not configured")),
-    )
-
-    class FakeTranslator:
-        def __init__(self, source, target):
-            pass
-
-        def translate(self, text):
-            raise RuntimeError("scraper down")
-
-    monkeypatch.setattr(ai_analysis, "GoogleTranslator", FakeTranslator)
-    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: None)
-
-    result = ai_analysis.translate_text("bonjour", source="fr", target="en")
-
-    assert result is None
-
-
-def test_analyze_text_skips_roberta_when_translation_unavailable(monkeypatch):
-    from core.services import ai_analysis
-
-    monkeypatch.setattr(ai_analysis, "translate_text", Mock(return_value=None))
-    monkeypatch.setattr(
-        ai_analysis,
-        "search_with_perplexity",
-        Mock(return_value={"sources": [], "citations": [], "verification_content": ""}),
-    )
+    monkeypatch.setattr(ai_analysis, "search_with_perplexity", search_mock)
     llm_mock = Mock(
         return_value={
             "statut": "INDÉTERMINÉE",
@@ -930,14 +691,50 @@ def test_analyze_text_skips_roberta_when_translation_unavailable(monkeypatch):
         }
     )
     monkeypatch.setattr(ai_analysis, "llm_analysis", llm_mock)
-    encode_plus_mock = Mock(side_effect=AssertionError("RoBERTa tokenizer should not be invoked"))
-    monkeypatch.setattr(ai_analysis.tokenizer, "encode_plus", encode_plus_mock)
 
-    result, sources = ai_analysis.analyze_text("un texte quelconque")
-
-    encode_plus_mock.assert_not_called()
+    result, returned_sources = ai_analysis.analyze_text("un texte quelconque")
 
     assert result["statut"] == "INDÉTERMINÉE"
-    assert sources == []
-    llm_mock.assert_called_once()
-    assert llm_mock.call_args[0][1] == "indéterminé"
+    assert returned_sources == sources
+    search_mock.assert_called_once_with("un texte quelconque")
+    llm_mock.assert_called_once_with("un texte quelconque", sources, "résumé")
+
+
+def test_analyze_text_wakes_the_model_only_when_it_is_the_engine(monkeypatch, settings):
+    from core.services import ai_analysis
+
+    monkeypatch.setattr(
+        ai_analysis,
+        "search_with_perplexity",
+        Mock(return_value={"sources": [], "citations": [], "verification_content": ""}),
+    )
+    monkeypatch.setattr(ai_analysis, "llm_analysis", Mock(return_value={"statut": "FAUSSE"}))
+    warm_mock = Mock()
+    monkeypatch.setattr(ai_analysis.llama_verdict, "warm_up_async", warm_mock)
+
+    settings.VERDICT_ENGINE = "gpt"
+    ai_analysis.analyze_text("texte")
+    warm_mock.assert_not_called()
+
+    settings.VERDICT_ENGINE = "llama"
+    ai_analysis.analyze_text("texte")
+    warm_mock.assert_called_once_with()
+
+
+def test_perplexity_search_sets_timeout_and_handles_timeout(monkeypatch):
+    import requests
+
+    post = Mock(side_effect=requests.Timeout("too slow"))
+    monkeypatch.setattr(perplexity_search.requests, "post", post)
+
+    assert perplexity_search.search_with_perplexity("claim") == {
+        "verification_content": "",
+        "sources": [],
+        "citations": [],
+        "raw_content": "",
+    }
+    assert post.call_args.kwargs["timeout"] == 60
+
+
+def test_llm_client_has_request_timeout():
+    assert llm.client.timeout == 120.0

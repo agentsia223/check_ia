@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useEffect, useId } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import Composer from "../components/check/Composer";
@@ -8,6 +8,7 @@ import Button from "../components/ui/Button";
 import Icon from "../components/ui/Icon";
 import { useAuth } from "../auth/AuthContext";
 import { usePageTitle } from "../hooks/usePageTitle";
+import { apiFetch } from "../lib/api";
 import { listChecks } from "../lib/checks";
 import { checkKeys } from "../lib/queryKeys";
 import { fiabilite, pctFr } from "../data/fiabilite";
@@ -135,6 +136,13 @@ function ReliabilityBand() {
 export default function Home() {
     usePageTitle("Vérifier une information");
     const { isLoggedIn } = useAuth();
+
+    // Wake the (sleeping) verdict model as soon as the page opens, so it is ready by the
+    // time the claim is typed. The endpoint needs a session; failures are ignored.
+    useEffect(() => {
+        if (!isLoggedIn) return;
+        Promise.resolve(apiFetch("verdict/warm/", { method: "POST" })).catch(() => {});
+    }, [isLoggedIn]);
 
     return (
         <div className={styles.home}>

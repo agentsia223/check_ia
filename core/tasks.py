@@ -426,10 +426,6 @@ def run_text_check(check_id):
         analysis_result, web_sources = analyze_text(check.claim)
         statut = analysis_result.get('statut') if isinstance(analysis_result, dict) else None
         state, verdict = map_text_status(statut)
-        if isinstance(analysis_result, dict) and analysis_result.get('analysis_failed'):
-            # llm_analysis failed and fell back to the local classifier with the
-            # exception text in 'explication': not a verdict for the web.
-            state, verdict = 'error', ''
         if state == 'error':
             # analyze_text embeds raw exception text in 'explication' on ERREUR.
             logger.error(f"run_text_check: analyse en ERREUR pour le check {check_id}")
