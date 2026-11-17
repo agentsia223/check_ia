@@ -12,6 +12,20 @@ function randomHex() {
 }
 
 /**
+ * Has this browser already created an anonymous token? Never creates one.
+ * @returns {boolean}
+ */
+export function hasAnonToken() {
+    if (memoryToken) return true;
+    try {
+        const stored = window.localStorage.getItem(ANON_STORAGE_KEY);
+        return Boolean(stored && TOKEN_PATTERN.test(stored));
+    } catch {
+        return false;
+    }
+}
+
+/**
  * Return this browser's anonymous token, creating it on first use.
  * @returns {string} 32 lowercase hex characters, persisted in localStorage under "checkia.anon".
  */

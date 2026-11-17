@@ -3,7 +3,8 @@ import { apiFetch, ApiError } from "../lib/api";
 
 export const MIN_RECORDING_MS = 400;
 
-const TRANSCRIBE_TIMEOUT_MS = 120000;
+// The server may take up to ~240 s (cold voice service plus a long clip).
+const TRANSCRIBE_TIMEOUT_MS = 240000;
 const TRANSLATE_TIMEOUT_MS = 60000;
 
 export const VOICE_MESSAGES = Object.freeze({
@@ -24,6 +25,7 @@ export const VOICE_MESSAGES = Object.freeze({
 });
 
 function transcriptionErrorMessage(error) {
+    if (error instanceof ApiError && error.code === "timeout") return VOICE_MESSAGES.timeout;
     if (!(error instanceof ApiError) || error.status === 0) return VOICE_MESSAGES.network;
     const serverError = typeof error.body?.error === "string" ? error.body.error : "";
     if (error.status === 503 && error.code === "voice_service_starting") return VOICE_MESSAGES.starting;

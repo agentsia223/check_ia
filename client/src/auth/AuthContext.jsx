@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { QueryClientContext } from "@tanstack/react-query";
 import { SESSION_KEY_PATTERN, getSupabase, mayHaveSession } from "../lib/supabase";
 import { claimAnonChecks } from "../lib/checks";
+import { hasAnonToken } from "../lib/anon";
 
 /**
  * Auth context value (see useAuth). Exported so tests can provide a fake value:
@@ -44,6 +45,20 @@ export function AuthProvider({ children }) {
     const connection = useRef(null);
     const unsubscribe = useRef(null);
     const unmounted = useRef(false);
+    // One claim per user id per page load, shared by the SIGNED_IN event and signIn/signUp.
+    const claims = useRef(new Map());
+
+    /** Claim this browser's anonymous checks for `userId`, quietly. Resolves when done. */
+    const claimFor = useCallback((userId) => {
+        if (!userId || !hasAnonToken()) return Promise.resolve();
+        if (!claims.current.has(userId)) {
+            // Deferred: supabase-js still holds its auth lock while it runs the
+            // onAuthStateChange callback, and the claim reads the session.
+            const deferred = new Promise((resolve) => setTimeout(resolve, 0));
+            claims.current.set(userId, deferred.then(claimQuietly));
+        }
+        return claims.current.get(userId);
+    }, []);
 
     /** Load Supabase once, read the session and follow its changes. Resolves the client or null. */
     const connect = useCallback(() => {
@@ -51,17 +66,20 @@ export function AuthProvider({ children }) {
             connection.current = getSupabase()
                 .then(async (client) => {
                     if (!client) return null;
-                    const { data } = await client.auth.getSession();
-                    if (!unmounted.current) setSession(data?.session ?? null);
+                    // Listen before reading the session: a confirmation link's SIGNED_IN
+                    // is emitted while supabase-js initialises.
                     const {
                         data: { subscription },
                     } = client.auth.onAuthStateChange((event, nextSession) => {
                         if (unmounted.current) return;
                         setSession(nextSession ?? null);
                         if (event === "SIGNED_OUT") queryClientRef.current?.clear();
+                        if (event === "SIGNED_IN") claimFor(nextSession?.user?.id);
                     });
                     unsubscribe.current = () => subscription.unsubscribe();
                     if (unmounted.current) unsubscribe.current();
+                    const { data } = await client.auth.getSession();
+                    if (!unmounted.current) setSession(data?.session ?? null);
                     return client;
                 })
                 .catch((error) => {
@@ -71,7 +89,7 @@ export function AuthProvider({ children }) {
                 });
         }
         return connection.current;
-    }, []);
+    }, [claimFor]);
 
     useEffect(() => {
         unmounted.current = false;
@@ -110,12 +128,12 @@ export function AuthProvider({ children }) {
     const signIn = useCallback(
         (email, password) =>
             run(async (auth) => {
-                const { error } = await auth.signInWithPassword({ email, password });
+                const { data, error } = await auth.signInWithPassword({ email, password });
                 if (error) return failure(error);
-                await claimQuietly();
+                await claimFor(data?.user?.id ?? data?.session?.user?.id);
                 return { ok: true };
             }),
-        [run]
+        [run, claimFor]
     );
 
     const signUp = useCallback(
@@ -132,10 +150,10 @@ export function AuthProvider({ children }) {
                 if (data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
                     return failure({ code: "user_already_exists" });
                 }
-                if (data?.session) await claimQuietly();
+                if (data?.session) await claimFor(data.session.user?.id ?? data.user?.id);
                 return { ok: true, hasSession: Boolean(data?.session) };
             }),
-        [run]
+        [run, claimFor]
     );
 
     const signOut = useCallback(

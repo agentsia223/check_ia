@@ -51,6 +51,9 @@ try:
     CHECKS_TRUSTED_PROXY_COUNT = max(1, int(os.getenv('CHECKS_TRUSTED_PROXY_COUNT', '1')))
 except ValueError:
     CHECKS_TRUSTED_PROXY_COUNT = 1
+# Trust a client-facing X-Real-IP header only when the host is confirmed to
+# overwrite any client-sent value. Off by default (see client_ip).
+CHECKS_TRUST_X_REAL_IP = os.getenv('CHECKS_TRUST_X_REAL_IP', 'False').lower() == 'true'
 
 ROOT_URLCONF = 'config.urls'
 

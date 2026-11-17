@@ -4,11 +4,11 @@ import { AuthContext } from "../auth/AuthContext";
 
 function Where() {
     const l = useLocation();
-    return <p data-testid="where">{l.pathname}</p>;
+    return <p data-testid="where">{`${l.pathname}${l.search}${l.hash}`}</p>;
 }
 
 /** Renders `ui` at `path` with a mocked auth context and a probe route for "/" and others. */
-export function renderAuth(ui, { path = "/", state, auth = {} } = {}) {
+export function renderAuth(ui, { path = "/", search = "", state, auth = {} } = {}) {
     const value = {
         user: null,
         isLoggedIn: false,
@@ -21,7 +21,7 @@ export function renderAuth(ui, { path = "/", state, auth = {} } = {}) {
         getAccessToken: vi.fn(),
         ...auth,
     };
-    const entry = { pathname: path, state };
+    const entry = { pathname: path, search, state };
     render(
         <AuthContext.Provider value={value}>
             <MemoryRouter initialEntries={[entry]}>

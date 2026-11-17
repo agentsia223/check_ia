@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 from celery.exceptions import SoftTimeLimitExceeded
 from django.apps import apps as django_apps
+from django.conf import settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import RequestFactory, TestCase, override_settings
 from django.utils import timezone
@@ -729,6 +730,12 @@ class ListChecksTest(CheckApiTestCase):
         self.assertEqual(len(body["results"]), 5)
         self.assertEqual(self.client.get("/api/checks/?page=9").json()["results"], [])
 
+    def test_huge_page_returns_empty_results(self):
+        make_check(claim="Affirmation", listed=True)
+        response = self.client.get(f"/api/checks/?scope=library&page={10 ** 20}")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.json(), {"count": 1, "page": 10 ** 20, "page_size": 20, "results": []})
+
     def test_invalid_list_parameters(self):
         for query in ("scope=tout", "verdict=peut-etre", "page=abc", "page=0"):
             with self.subTest(query=query):
@@ -853,12 +860,26 @@ class ClientIpTest(TestCase):
     def ip(self, **meta):
         return checks_service.client_ip(self.factory.get("/api/checks/", **meta))
 
-    def test_x_real_ip_wins(self):
+    def test_x_real_ip_not_trusted_by_default(self):
+        self.assertFalse(settings.CHECKS_TRUST_X_REAL_IP)
+        self.assertEqual(self.ip(HTTP_X_REAL_IP="198.51.100.7", HTTP_X_FORWARDED_FOR="1.1.1.1, 2.2.2.2"),
+                         "2.2.2.2")
+        self.assertEqual(self.ip(HTTP_X_REAL_IP="198.51.100.7", REMOTE_ADDR="192.0.2.44"), "192.0.2.44")
+
+    @override_settings(CHECKS_TRUST_X_REAL_IP=False, CHECKS_TRUSTED_PROXY_COUNT=2)
+    def test_untrusted_x_real_ip_uses_forwarded_for_hop(self):
+        self.assertEqual(self.ip(HTTP_X_REAL_IP="198.51.100.7", HTTP_X_FORWARDED_FOR="1.1.1.1, 2.2.2.2, 3.3.3.3"),
+                         "2.2.2.2")
+
+    @override_settings(CHECKS_TRUST_X_REAL_IP=True)
+    def test_trusted_x_real_ip_wins(self):
         self.assertEqual(self.ip(HTTP_X_REAL_IP=" 198.51.100.7 ", HTTP_X_FORWARDED_FOR="1.1.1.1, 2.2.2.2"),
                          "198.51.100.7")
 
-    def test_empty_x_real_ip_falls_through(self):
+    @override_settings(CHECKS_TRUST_X_REAL_IP=True)
+    def test_trusted_empty_x_real_ip_falls_through(self):
         self.assertEqual(self.ip(HTTP_X_REAL_IP="  ", HTTP_X_FORWARDED_FOR="1.1.1.1, 2.2.2.2"), "2.2.2.2")
+        self.assertEqual(self.ip(HTTP_X_REAL_IP="  ", REMOTE_ADDR="192.0.2.44"), "192.0.2.44")
 
     def test_forwarded_for_uses_trusted_proxy_count(self):
         chain = "9.9.9.9, 1.1.1.1, 2.2.2.2, 3.3.3.3"

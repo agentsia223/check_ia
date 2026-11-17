@@ -157,19 +157,23 @@ def _trusted_proxy_count():
 def client_ip(request):
     """Client IP used for the per-IP caps.
 
-    Order: X-Real-IP if present; else the X-Forwarded-For entry
+    Order: X-Real-IP if CHECKS_TRUST_X_REAL_IP is on and the header is
+    non-empty (off by default: a client can send its own X-Real-IP unless the
+    host overwrites it); else the X-Forwarded-For entry
     CHECKS_TRUSTED_PROXY_COUNT positions from the right (1 = last hop, the one
     the nearest proxy appended; entries further left are client-supplied and
     spoofable; a shorter list falls back to its first entry); else REMOTE_ADDR.
 
-    DEPLOY: X-Real-IP trust and CHECKS_TRUSTED_PROXY_COUNT must be confirmed
-    against the hosting proxy chain (Railway alone = 1; add one per CDN/proxy
-    in front). A wrong value either lets clients spoof their IP or makes all
-    visitors share one cap.
+    DEPLOY: only turn CHECKS_TRUST_X_REAL_IP on once the host is confirmed to
+    overwrite a client-sent X-Real-IP. CHECKS_TRUSTED_PROXY_COUNT must be
+    confirmed against the hosting proxy chain (Railway alone = 1; add one per
+    CDN/proxy in front). A wrong value either lets clients spoof their IP or
+    makes all visitors share one cap.
     """
-    real_ip = (request.META.get('HTTP_X_REAL_IP') or '').strip()
-    if real_ip:
-        return real_ip
+    if getattr(settings, 'CHECKS_TRUST_X_REAL_IP', False):
+        real_ip = (request.META.get('HTTP_X_REAL_IP') or '').strip()
+        if real_ip:
+            return real_ip
     forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
     hops = [hop.strip() for hop in forwarded.split(',') if hop.strip()]
     if hops:

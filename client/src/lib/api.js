@@ -134,7 +134,7 @@ async function realFetch(path, { method = "GET", json, formData, signal, timeout
             return { status: response.status, body: parseBody(text) };
         } catch (error) {
             if (signal?.aborted && !timedOut) throw error;
-            throw new ApiError(0, "network");
+            throw new ApiError(0, timedOut ? "timeout" : "network");
         } finally {
             clearTimeout(timer);
             signal?.removeEventListener("abort", onCallerAbort);
@@ -150,7 +150,8 @@ async function realFetch(path, { method = "GET", json, formData, signal, timeout
  *   X-Anon-Token when signed in (used by the claim call).
  * @returns {Promise<any>} parsed JSON body, or null for empty responses.
  * @throws {ApiError} on HTTP errors (401 auth_required after one refresh), network failure
- *   or timeout (status 0, code "network"). A caller abort rethrows the AbortError.
+ *   (status 0, code "network") or client timeout (status 0, code "timeout"). A caller
+ *   abort rethrows the AbortError.
  */
 export async function apiFetch(path, options = {}) {
     if (MOCK_API) {
@@ -192,7 +193,7 @@ function xhrSend(path, formData, token, onProgress, signal) {
         };
         xhr.ontimeout = () => {
             done();
-            reject(new ApiError(0, "network"));
+            reject(new ApiError(0, "timeout"));
         };
         xhr.onabort = () => {
             done();

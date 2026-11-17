@@ -11,6 +11,8 @@ vi.mock("../lib/supabase", () => ({
 }));
 vi.mock("../lib/checks", () => ({ claimAnonChecks: vi.fn() }));
 
+const STORED_ANON_TOKEN = "0123456789abcdef0123456789abcdef";
+
 let authListener;
 let fakeAuth;
 
@@ -23,7 +25,10 @@ const makeClient = (session = null) => {
             return { data: { subscription: { unsubscribe: vi.fn() } } };
         }),
         signInWithPassword: vi.fn(() =>
-            Promise.resolve({ data: { session: { access_token: "t" } }, error: null })
+            Promise.resolve({
+                data: { user: { id: "u" }, session: { access_token: "t", user: { id: "u" } } },
+                error: null,
+            })
         ),
         signUp: vi.fn(() =>
             Promise.resolve({
@@ -50,6 +55,7 @@ const renderAuth = async (session = null) => {
 beforeEach(() => {
     claimAnonChecks.mockResolvedValue({ claimed: 0 });
     mayHaveSession.mockReturnValue(true);
+    window.localStorage.setItem("checkia.anon", STORED_ANON_TOKEN);
 });
 
 afterEach(() => {
@@ -77,6 +83,7 @@ test("follows auth state changes", async () => {
 
     act(() => authListener("SIGNED_IN", { access_token: "n", user: { id: "u2", email: "b@c.d" } }));
     expect(result.current.isLoggedIn).toBe(true);
+    await waitFor(() => expect(claimAnonChecks).toHaveBeenCalledTimes(1));
 
     act(() => authListener("SIGNED_OUT", null));
     expect(result.current.isLoggedIn).toBe(false);
@@ -144,7 +151,7 @@ test("signUp without a session (email confirmation) succeeds without claiming", 
 test("signUp with an immediate session claims anonymous checks", async () => {
     const { result } = await renderAuth();
     fakeAuth.signUp.mockResolvedValue({
-        data: { user: { id: "u", identities: [{}] }, session: { access_token: "s" } },
+        data: { user: { id: "u", identities: [{}] }, session: { access_token: "s", user: { id: "u" } } },
         error: null,
     });
 
@@ -154,6 +161,83 @@ test("signUp with an immediate session claims anonymous checks", async () => {
     });
     expect(outcome).toEqual({ ok: true, hasSession: true });
     expect(claimAnonChecks).toHaveBeenCalledTimes(1);
+});
+
+describe("claiming anonymous checks on sign-in", () => {
+    const signedIn = (id) => ({ access_token: `t-${id}`, user: { id, email: `${id}@example.org` } });
+    // The claim is deferred out of the auth callback: let timers and promises settle.
+    const settle = () => act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+
+    test("a SIGNED_IN event from a confirmation link claims, without any signIn call", async () => {
+        const { result } = await renderAuth(null);
+
+        act(() => authListener("SIGNED_IN", signedIn("u3")));
+        await waitFor(() => expect(claimAnonChecks).toHaveBeenCalledTimes(1));
+        expect(fakeAuth.signInWithPassword).not.toHaveBeenCalled();
+        expect(result.current.isLoggedIn).toBe(true);
+    });
+
+    test("listens before reading the session, so a link's SIGNED_IN during start-up is seen", async () => {
+        const client = makeClient(null);
+        // supabase-js emits the confirmation link's SIGNED_IN while it initialises.
+        fakeAuth.getSession.mockImplementation(() => {
+            authListener?.("SIGNED_IN", signedIn("u4"));
+            return Promise.resolve({ data: { session: signedIn("u4") } });
+        });
+        getSupabase.mockResolvedValue(client);
+        const { result } = renderHook(() => useAuth(), { wrapper });
+
+        await waitFor(() => expect(claimAnonChecks).toHaveBeenCalledTimes(1));
+        expect(result.current.user.id).toBe("u4");
+    });
+
+    test("claims at most once per user id per page load", async () => {
+        const { result } = await renderAuth(null);
+
+        act(() => authListener("SIGNED_IN", signedIn("u")));
+        act(() => authListener("SIGNED_IN", signedIn("u")));
+        await act(async () => {
+            await result.current.signIn("u@example.org", "secret123");
+        });
+        await settle();
+        expect(claimAnonChecks).toHaveBeenCalledTimes(1);
+
+        act(() => authListener("SIGNED_IN", signedIn("other")));
+        await waitFor(() => expect(claimAnonChecks).toHaveBeenCalledTimes(2));
+    });
+
+    test("other auth events do not claim", async () => {
+        await renderAuth(null);
+
+        act(() => authListener("INITIAL_SESSION", signedIn("u")));
+        act(() => authListener("TOKEN_REFRESHED", signedIn("u")));
+        act(() => authListener("USER_UPDATED", signedIn("u")));
+        await settle();
+        expect(claimAnonChecks).not.toHaveBeenCalled();
+    });
+
+    test("nothing is claimed without a stored anonymous token", async () => {
+        window.localStorage.removeItem("checkia.anon");
+        const { result } = await renderAuth(null);
+
+        act(() => authListener("SIGNED_IN", signedIn("u")));
+        await act(async () => {
+            await expect(result.current.signIn("u@example.org", "secret123")).resolves.toEqual({ ok: true });
+        });
+        await settle();
+        expect(claimAnonChecks).not.toHaveBeenCalled();
+        expect(window.localStorage.getItem("checkia.anon")).toBeNull();
+    });
+
+    test("a failing claim after the event stays quiet", async () => {
+        claimAnonChecks.mockRejectedValue(new Error("network"));
+        const { result } = await renderAuth(null);
+
+        act(() => authListener("SIGNED_IN", signedIn("u")));
+        await waitFor(() => expect(claimAnonChecks).toHaveBeenCalledTimes(1));
+        await settle();
+        expect(result.current.isLoggedIn).toBe(true);
+    });
 });
 
 test("signUp for an existing address returns the already-registered message", async () => {

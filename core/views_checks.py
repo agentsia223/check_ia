@@ -147,7 +147,11 @@ class CheckListCreateView(ChecksAPIView):
 
         count = queryset.count()
         start = (page - 1) * rules.PAGE_SIZE
-        results = [rules.serialize_summary(c) for c in queryset[start:start + rules.PAGE_SIZE]]
+        if start >= count:
+            # Past the last page: never send a huge OFFSET to the database.
+            results = []
+        else:
+            results = [rules.serialize_summary(c) for c in queryset[start:start + rules.PAGE_SIZE]]
         return Response({'count': count, 'page': page, 'page_size': rules.PAGE_SIZE, 'results': results})
 
     def post(self, request):

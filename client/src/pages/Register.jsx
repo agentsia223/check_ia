@@ -13,6 +13,7 @@ import {
     PasswordField,
     TermsLine,
     isValidEmail,
+    returnTarget,
 } from "./authShared";
 import styles from "./Auth.module.css";
 
@@ -21,7 +22,7 @@ export default function Register() {
     const { signUp, isLoggedIn, loading: authLoading } = useAuth();
     const location = useLocation();
     const navigate = useNavigate();
-    const target = location.state?.from?.pathname ?? "/";
+    const target = returnTarget(location);
     const emailRef = useRef(null);
     const passwordRef = useRef(null);
     const [email, setEmail] = useState("");

@@ -247,7 +247,7 @@ describe("apiFetch network failures", () => {
         expect(error.code).toBe("network");
     });
 
-    test("a timeout throws ApiError(0, network)", async () => {
+    test("a timeout throws ApiError(0, timeout)", async () => {
         vi.useFakeTimers();
         fetchMock.mockImplementation(
             (url, { signal }) =>
@@ -263,7 +263,29 @@ describe("apiFetch network failures", () => {
         const error = await pending;
 
         expect(error).toBeInstanceOf(ApiError);
-        expect(error.code).toBe("network");
+        expect(error.status).toBe(0);
+        expect(error.code).toBe("timeout");
+    });
+
+    test("a timeout with a caller signal is still a timeout, not an abort", async () => {
+        vi.useFakeTimers();
+        const controller = new AbortController();
+        fetchMock.mockImplementation(
+            (url, { signal }) =>
+                new Promise((resolve, reject) => {
+                    signal.addEventListener("abort", () =>
+                        reject(new DOMException("aborted", "AbortError"))
+                    );
+                })
+        );
+
+        const pending = apiFetch("checks/", { timeoutMs: 50, signal: controller.signal }).catch((e) => e);
+        await vi.advanceTimersByTimeAsync(60);
+        const error = await pending;
+
+        expect(error).toBeInstanceOf(ApiError);
+        expect(error.code).toBe("timeout");
+        expect(controller.signal.aborted).toBe(false);
     });
 
     test("a caller abort is rethrown as an AbortError, not a network error", async () => {
@@ -418,19 +440,20 @@ describe("apiUpload", () => {
         expect(FakeXHR.instances).toHaveLength(0);
     });
 
-    test.each([["network"], ["timeout"]])("%s failures become ApiError(0, network)", async (step) => {
+    test.each([["network"], ["timeout"]])("%s failures become ApiError(0) with that code", async (step) => {
         FakeXHR.script = [step];
 
         const error = await apiUpload("checks/", new FormData()).catch((e) => e);
         expect(error).toBeInstanceOf(ApiError);
         expect(error.status).toBe(0);
-        expect(error.code).toBe("network");
+        expect(error.code).toBe(step);
     });
 });
 
 describe("errorMessageFr", () => {
     test.each([
         [new ApiError(0, "network"), /connexion/i],
+        [new ApiError(0, "timeout"), /connexion/i],
         [new ApiError(401, "auth_required"), /connectez-vous/i],
         [new ApiError(404, "not_found"), /introuvable/i],
         [new ApiError(429, "ip_cap"), /trop de/i],

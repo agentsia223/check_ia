@@ -94,6 +94,8 @@ test("Bambara: transcribes, translates and fills the claim without submitting", 
     const formData = apiFetch.mock.calls[0][1].formData;
     expect(formData.get("language")).toBe("bm");
     expect(formData.get("file")).toBeInstanceOf(File);
+    // A cold voice service plus a long clip can take the server about 240 s.
+    expect(apiFetch.mock.calls[0][1].timeoutMs).toBe(240000);
     expect(apiFetch.mock.calls[1]).toEqual([
         "bambara/translate/",
         expect.objectContaining({
@@ -160,6 +162,7 @@ test("an empty recording is reported", async () => {
 
 test.each([
     [new ApiError(0, "network"), VOICE_MESSAGES.network],
+    [new ApiError(0, "timeout"), VOICE_MESSAGES.timeout],
     [new ApiError(503, "voice_service_starting"), VOICE_MESSAGES.starting],
     [new ApiError(502, "server"), VOICE_MESSAGES.badGateway],
     [new ApiError(503, "server"), VOICE_MESSAGES.unavailable],

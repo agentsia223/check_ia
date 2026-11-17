@@ -12,6 +12,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=API_TOKEN,
+    timeout=120.0,
 )
 
 # Fonction pour utiliser l'API OpenRouter pour l'analyse combinée

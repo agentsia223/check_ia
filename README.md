@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="client/public/logo_check.png" alt="Check-IA Logo" width="120" />
+<img src="client/public/brand/logo-icon.svg" alt="Check-IA Logo" width="120" />
 
 # Check-IA
 

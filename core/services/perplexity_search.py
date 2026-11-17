@@ -97,7 +97,7 @@ Réponds en français avec:
         }
         
         logging.info("Envoi de la requête à l'API Perplexity...")
-        response = requests.post(PERPLEXITY_URL, json=payload, headers=headers)
+        response = requests.post(PERPLEXITY_URL, json=payload, headers=headers, timeout=60)
         
         if response.status_code == 200:
             response_data = response.json()

@@ -5,7 +5,7 @@ import Button from "../components/ui/Button";
 import Field from "../components/ui/Field";
 import Notice from "../components/ui/Notice";
 import { usePageTitle } from "../hooks/usePageTitle";
-import { AuthCard, EMAIL_ERROR, PasswordField, TermsLine, isValidEmail } from "./authShared";
+import { AuthCard, EMAIL_ERROR, PasswordField, TermsLine, isValidEmail, returnTarget } from "./authShared";
 import styles from "./Auth.module.css";
 
 export default function Login() {
@@ -21,7 +21,7 @@ export default function Login() {
     const [formError, setFormError] = useState("");
     const [busy, setBusy] = useState(false);
 
-    const target = location.state?.from?.pathname ?? "/";
+    const target = returnTarget(location);
 
     if (!authLoading && isLoggedIn) return <Navigate to={target} replace />;
 

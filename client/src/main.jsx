@@ -10,6 +10,9 @@ import "@fontsource/barlow-semi-condensed/700.css";
 import "./styles/tokens.css";
 import "./styles/base.css";
 import App from "./App";
+import { installPreloadRecovery } from "./lib/preloadRecovery";
+
+installPreloadRecovery();
 
 createRoot(document.getElementById("root")).render(
     <StrictMode>

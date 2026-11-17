@@ -9,6 +9,21 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const EMAIL_ERROR = "Saisissez une adresse e-mail valide.";
 export const PASSWORD_SHORT_ERROR = `Le mot de passe doit contenir au moins ${MIN_PASSWORD_LENGTH} caractères.`;
 
+/**
+ * Where to go after signing in: the `from` location in router state (path, query and
+ * hash), else "/". Never read from the URL, so a link cannot pick the destination.
+ * @param {{state?: any}} location
+ * @returns {string}
+ */
+export function returnTarget(location) {
+    const from = location.state?.from;
+    const pathname = from?.pathname;
+    if (typeof pathname !== "string" || !pathname.startsWith("/") || pathname.startsWith("//")) return "/";
+    const search = typeof from.search === "string" ? from.search : "";
+    const hash = typeof from.hash === "string" ? from.hash : "";
+    return `${pathname}${search}${hash}`;
+}
+
 export function isValidEmail(value) {
     return EMAIL_RE.test(value.trim());
 }

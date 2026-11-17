@@ -63,6 +63,20 @@ test("login link keeps state", () => {
     expect(screen.getByRole("link", { name: /se connecter/i })).toHaveAttribute("href", "/connexion");
 });
 
+test("with a session after sign-up, returns to the full from location", async () => {
+    const user = userEvent.setup();
+    renderAuth(<Register />, {
+        path: "/inscription",
+        search: "?from=%2Fautre",
+        state: { from: { pathname: "/bibliotheque", search: "?q=riz", hash: "#resultats" } },
+        auth: { signUp: vi.fn().mockResolvedValue({ ok: true, hasSession: true }) },
+    });
+    await user.type(screen.getByLabelText("Adresse e-mail"), "a@b.fr");
+    await user.type(screen.getByLabelText("Mot de passe"), "secret123");
+    await user.click(screen.getByRole("button", { name: "Créer mon compte" }));
+    expect(await screen.findByTestId("where")).toHaveTextContent(/^\/bibliotheque\?q=riz#resultats$/);
+});
+
 test("with a session after sign-up, leaves the form for where the visitor came from", async () => {
     const user = userEvent.setup();
     renderAuth(<Register />, {

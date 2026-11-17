@@ -193,6 +193,25 @@ def test_perplexity_search_handles_errors_and_helper_exceptions(monkeypatch):
     assert "CONTEXTE" in perplexity_search.create_enriched_content("main", [], "19/05/2026")
 
 
+def test_perplexity_search_sets_timeout_and_handles_timeout(monkeypatch):
+    import requests
+
+    post = Mock(side_effect=requests.Timeout("too slow"))
+    monkeypatch.setattr(perplexity_search.requests, "post", post)
+
+    assert perplexity_search.search_with_perplexity("claim") == {
+        "verification_content": "",
+        "sources": [],
+        "citations": [],
+        "raw_content": "",
+    }
+    assert post.call_args.kwargs["timeout"] == 60
+
+
+def test_llm_client_has_request_timeout():
+    assert llm.client.timeout == 120.0
+
+
 def test_supabase_storage_upload_delete_urls_and_bucket_paths(monkeypatch):
     bucket = FakeStorageBucket(signed_url={"signedURL": "https://signed.test/file.jpg"})
     client = FakeSupabaseClient(bucket=bucket)

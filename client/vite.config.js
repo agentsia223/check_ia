@@ -69,7 +69,7 @@ export default defineConfig(({ mode }) => {
                 "assets/supabase-*.js",
                 "assets/*-vietnamese-*",
                 "assets/*-latin-ext-*",
-                "assets/logo-icon*.svg",
+                "brand/logo-icon*.svg",
                 "apple-touch-icon.png",
                 "logo*.png",
             ],
