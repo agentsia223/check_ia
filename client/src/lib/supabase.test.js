@@ -1,44 +1,135 @@
-const mockAuth = {
-    signInWithPassword: jest.fn(),
-    signUp: jest.fn(),
-    signOut: jest.fn(),
-    getUser: jest.fn(),
-    getSession: jest.fn(),
+const auth = {
+    getSession: vi.fn(),
+    refreshSession: vi.fn(),
+    signOut: vi.fn(),
 };
+const createClient = vi.fn(() => ({ auth }));
 
-jest.mock("@supabase/supabase-js", () => ({
-    createClient: jest.fn(() => ({ auth: mockAuth })),
-}));
+async function load({ url = "https://projet.supabase.co", key = "cle-publique" } = {}) {
+    vi.resetModules();
+    vi.doMock("./config", () => ({ SUPABASE_URL: url, SUPABASE_ANON_KEY: key }));
+    vi.doMock("@supabase/supabase-js", () => ({ createClient }));
+    return import("./supabase");
+}
 
-const {
-    getCurrentSession,
-    getCurrentUser,
-    signIn,
-    signOut,
-    signUp,
-} = require("./supabase");
-
-beforeEach(() => {
-    jest.clearAllMocks();
+afterEach(() => {
+    window.localStorage.clear();
+    window.history.replaceState(null, "", "/");
+    vi.clearAllMocks();
+    vi.doUnmock("./config");
+    vi.doUnmock("@supabase/supabase-js");
 });
 
-test("supabase auth helpers delegate to the configured client", async () => {
-    mockAuth.signInWithPassword.mockResolvedValue({ data: { user: "user" }, error: null });
-    mockAuth.signUp.mockResolvedValue({ data: { user: "new-user" }, error: null });
-    mockAuth.signOut.mockResolvedValue({ error: null });
-    mockAuth.getUser.mockResolvedValue({ data: { user: "current-user" }, error: null });
-    mockAuth.getSession.mockResolvedValue({ data: { session: "session" }, error: null });
+test("creates one client lazily from the configured variables", async () => {
+    const mod = await load();
+    const first = await mod.getSupabase();
+    const second = await mod.getSupabase();
 
-    await expect(signIn("user@example.com", "password")).resolves.toEqual({
-        data: { user: "user" },
-        error: null,
-    });
-    await expect(signUp("user@example.com", "password", { data: { name: "User" } })).resolves.toEqual({
-        data: { user: "new-user" },
-        error: null,
-    });
-    await expect(signOut()).resolves.toEqual({ error: null });
-    await expect(getCurrentUser()).resolves.toEqual({ user: "current-user", error: null });
-    await expect(getCurrentSession()).resolves.toEqual({ session: "session", error: null });
+    expect(first).toBe(second);
+    expect(createClient).toHaveBeenCalledTimes(1);
+    expect(createClient).toHaveBeenCalledWith("https://projet.supabase.co", "cle-publique");
 });
 
+test("returns null and safe defaults when auth is not configured", async () => {
+    const mod = await load({ url: "", key: "" });
+
+    await expect(mod.getSupabase()).resolves.toBeNull();
+    await expect(mod.getSession()).resolves.toBeNull();
+    await expect(mod.refreshSession()).resolves.toBeNull();
+    await expect(mod.signOutLocal()).resolves.toBeUndefined();
+    expect(createClient).not.toHaveBeenCalled();
+});
+
+test("session helpers delegate to the client", async () => {
+    const mod = await load();
+    window.localStorage.setItem("sb-projet-auth-token", "{}");
+    auth.getSession.mockResolvedValue({ data: { session: { access_token: "a" } } });
+    auth.refreshSession.mockResolvedValue({ data: { session: { access_token: "b" } }, error: null });
+    auth.signOut.mockResolvedValue({ error: null });
+
+    await expect(mod.getSession()).resolves.toEqual({ access_token: "a" });
+    await expect(mod.refreshSession()).resolves.toEqual({ access_token: "b" });
+    await mod.signOutLocal();
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: "local" });
+});
+
+test("refresh and sign-out failures are absorbed", async () => {
+    const mod = await load();
+    auth.refreshSession.mockResolvedValueOnce({ data: {}, error: { message: "expired" } });
+    await expect(mod.refreshSession()).resolves.toBeNull();
+
+    auth.refreshSession.mockRejectedValueOnce(new Error("network"));
+    await expect(mod.refreshSession()).resolves.toBeNull();
+
+    auth.getSession.mockResolvedValue({ data: {} });
+    await expect(mod.getSession()).resolves.toBeNull();
+
+    auth.signOut.mockRejectedValue(new Error("network"));
+    await expect(mod.signOutLocal()).resolves.toBeUndefined();
+});
+
+test("refreshSessionDetailed tells a refused token from a network failure", async () => {
+    const mod = await load();
+    const authError = Object.assign(new Error("Invalid Refresh Token"), { name: "AuthApiError", status: 400 });
+    const retryable = Object.assign(new Error("Failed to fetch"), { name: "AuthRetryableFetchError", status: 0 });
+    const serverError = Object.assign(new Error("Bad gateway"), { name: "AuthUnknownError", status: 502 });
+
+    auth.refreshSession.mockResolvedValueOnce({ data: { session: { access_token: "n" } }, error: null });
+    await expect(mod.refreshSessionDetailed()).resolves.toEqual({ session: { access_token: "n" }, failure: null });
+
+    auth.refreshSession.mockResolvedValueOnce({ data: {}, error: authError });
+    await expect(mod.refreshSessionDetailed()).resolves.toEqual({ session: null, failure: "auth" });
+
+    auth.refreshSession.mockResolvedValueOnce({ data: {}, error: retryable });
+    await expect(mod.refreshSessionDetailed()).resolves.toEqual({ session: null, failure: "network" });
+
+    auth.refreshSession.mockResolvedValueOnce({ data: {}, error: serverError });
+    await expect(mod.refreshSessionDetailed()).resolves.toEqual({ session: null, failure: "network" });
+
+    auth.refreshSession.mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    await expect(mod.refreshSessionDetailed()).resolves.toEqual({ session: null, failure: "network" });
+
+    auth.refreshSession.mockRejectedValueOnce(Object.assign(new Error("missing"), { name: "AuthSessionMissingError" }));
+    await expect(mod.refreshSessionDetailed()).resolves.toEqual({ session: null, failure: "auth" });
+
+    auth.refreshSession.mockResolvedValueOnce({ data: { session: null }, error: null });
+    await expect(mod.refreshSessionDetailed()).resolves.toEqual({ session: null, failure: "auth" });
+});
+
+test("refreshSessionDetailed without auth configured is an auth failure", async () => {
+    const mod = await load({ url: "", key: "" });
+    await expect(mod.refreshSessionDetailed()).resolves.toEqual({ session: null, failure: "auth" });
+});
+
+describe("mayHaveSession: Supabase is not loaded for visitors without a session", () => {
+    test("false with no stored session and no auth redirect; getSession does not load the client", async () => {
+        const mod = await load();
+        window.localStorage.setItem("checkia.anon", "abc");
+        expect(mod.mayHaveSession()).toBe(false);
+        await expect(mod.getSession()).resolves.toBeNull();
+        await mod.signOutLocal();
+        expect(createClient).not.toHaveBeenCalled();
+    });
+
+    test("true with a stored supabase-js session", async () => {
+        const mod = await load();
+        window.localStorage.setItem("sb-projet-auth-token", "{}");
+        expect(mod.mayHaveSession()).toBe(true);
+    });
+
+    test.each([
+        ["/reinitialiser#access_token=x&type=recovery"],
+        ["/connexion?code=abc"],
+        ["/connexion#error_description=expired"],
+    ])("true when the URL is an auth redirect (%s)", async (url) => {
+        const mod = await load();
+        window.history.replaceState(null, "", url);
+        expect(mod.mayHaveSession()).toBe(true);
+    });
+
+    test("true once the client has been loaded", async () => {
+        const mod = await load();
+        await mod.getSupabase();
+        expect(mod.mayHaveSession()).toBe(true);
+    });
+});

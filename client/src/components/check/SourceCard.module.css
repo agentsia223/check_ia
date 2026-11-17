@@ -1,0 +1,60 @@
+/* Values from the mockup's .src rule. */
+
+.card {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 18px;
+  gap: 12px;
+  align-items: start;
+  min-height: 44px;
+  padding: 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-card);
+  color: var(--navy-900);
+  text-decoration: none;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+a.card:hover {
+  border-color: var(--border-default);
+}
+
+a.card:hover .title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.number {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  background: var(--navy-50);
+  color: var(--navy-600);
+  font: var(--weight-bold) 17px var(--font-display);
+}
+
+.body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  font-weight: var(--weight-semibold);
+  font-size: 15.5px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: 13.5px;
+  color: var(--slate-600);
+  overflow-wrap: anywhere;
+}
+
+.out {
+  margin-top: 2px;
+  color: var(--slate-400);
+}

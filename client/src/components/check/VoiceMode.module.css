@@ -1,0 +1,203 @@
+.voice {
+  display: grid;
+  gap: 16px;
+  padding: 18px 20px 6px;
+}
+
+.loading {
+  padding: 32px 20px;
+  font-size: 15px;
+  color: var(--slate-600);
+  text-align: center;
+}
+
+/* ---- Recorder ---- */
+
+.recorder {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 20px 16px;
+  text-align: center;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--slate-50);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: 20px;
+  color: var(--navy-900);
+}
+
+.subtitle {
+  font-size: 14.5px;
+  color: var(--slate-600);
+}
+
+.micWrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 16px 0 10px;
+}
+
+.ring {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-full);
+  background: var(--navy-100);
+  animation: ring 2s ease-out infinite;
+}
+
+.recorder[data-phase="recording"] .ring {
+  background: var(--red-100);
+}
+
+.mic {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-full);
+  border: 3px solid var(--surface-card);
+  background: var(--navy-600);
+  color: var(--text-on-brand);
+  box-shadow: var(--shadow-md);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.mic:hover:not(:disabled) {
+  background: var(--navy-700);
+}
+
+.recorder[data-phase="recording"] .mic {
+  background: var(--red-600);
+}
+
+.mic:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mic:focus-visible {
+  outline: 3px solid var(--navy-600);
+  outline-offset: 3px;
+}
+
+.action {
+  font-weight: var(--weight-bold);
+  color: var(--navy-900);
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--slate-600);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--navy-400);
+}
+
+.recorder[data-phase="recording"] .dot {
+  background: var(--red-600);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.recorder[data-phase="transcribing"] .dot {
+  background: var(--amber-600);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.transcript {
+  margin-top: 6px;
+  font-size: 14px;
+  font-style: italic;
+  color: var(--slate-600);
+}
+
+.notice {
+  margin: 0;
+}
+
+/* ---- Signed-out invitation ---- */
+
+.invite {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 22px 20px 18px;
+}
+
+.inviteIcon {
+  color: var(--navy-600);
+}
+
+.inviteTitle {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: 21px;
+  color: var(--navy-900);
+}
+
+.inviteText {
+  max-width: 52ch;
+  font-size: 15.5px;
+  color: var(--slate-700);
+}
+
+.inviteActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+@keyframes ring {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@media (max-width: 640px) {
+  .voice {
+    padding: 16px 16px 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring,
+  .dot {
+    animation: none !important;
+  }
+
+  .ring {
+    opacity: 0.5;
+  }
+}

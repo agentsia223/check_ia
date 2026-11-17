@@ -1,0 +1,41 @@
+.page {
+  display: grid;
+  gap: 18px;
+  justify-items: start;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 48px var(--page-gutter) 72px;
+}
+
+.title {
+  margin-top: 16px;
+  font-size: clamp(32px, 6vw, 44px);
+  line-height: 1.1;
+}
+
+.title:focus {
+  outline: none;
+}
+
+.title:focus-visible {
+  outline: 3px solid var(--navy-600);
+  outline-offset: 4px;
+}
+
+.text {
+  max-width: 60ch;
+  font-size: 17px;
+  color: var(--slate-800);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 28px var(--page-gutter-sm) 72px;
+  }
+}

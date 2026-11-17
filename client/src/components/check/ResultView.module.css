@@ -1,0 +1,300 @@
+/* Values from the mockup's screen 3: .crumb, .res, .vline, .conf, .segs, .scale, .res h4,
+   .why, .srcs, .caveat, .meta, .ai, .rel. */
+
+.page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+}
+
+.crumbRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 18px var(--page-gutter) 0;
+  font-size: 14px;
+  color: var(--slate-600);
+}
+
+.crumb a {
+  color: var(--slate-600);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.crumb a:hover {
+  color: var(--navy-900);
+  text-decoration: underline;
+}
+
+.crumb b {
+  color: var(--navy-900);
+  font-weight: var(--weight-semibold);
+}
+
+.ai {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 11px;
+  border-radius: var(--radius-pill);
+  background: var(--slate-100);
+  color: var(--slate-700);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 296px;
+  gap: 64px;
+  align-items: start;
+  padding: 26px var(--page-gutter) 72px;
+}
+
+.main {
+  min-width: 0;
+}
+
+.vline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px 34px;
+  margin: 34px 0 22px 6px;
+}
+
+.verdict {
+  font-size: inherit;
+  line-height: 1;
+}
+
+.verdict:focus {
+  outline: none;
+}
+
+.verdict:focus-visible {
+  outline: 3px solid var(--navy-600);
+  outline-offset: 8px;
+}
+
+.analysis {
+  font-family: var(--font-display);
+  font-size: 34px;
+  color: var(--navy-900);
+}
+
+.conf {
+  display: grid;
+  gap: 2px;
+}
+
+.confValue {
+  font-family: var(--font-display);
+  font-size: 22px;
+  color: var(--navy-900);
+}
+
+.confLine {
+  font-size: 14.5px;
+  color: var(--slate-700);
+}
+
+.segs {
+  display: flex;
+  gap: 4px;
+  margin: 8px 0;
+}
+
+.segs i {
+  width: 34px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--slate-200);
+}
+
+.segs i.segOn {
+  background: var(--navy-600);
+}
+
+.scale {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  max-width: 390px;
+  margin: 0 0 34px 6px;
+  list-style: none;
+}
+
+.scale li {
+  padding-top: 8px;
+  border-top: 5px solid var(--slate-200);
+  font-size: 13px;
+  font-weight: var(--weight-medium);
+  color: var(--slate-600);
+}
+
+.scale li.at {
+  font-weight: var(--weight-bold);
+}
+
+.scale li.red {
+  color: var(--red-600);
+  border-color: var(--red-600);
+}
+
+.scale li.amber {
+  color: var(--amber-700);
+  border-color: var(--amber-600);
+}
+
+.scale li.green {
+  color: var(--green-700);
+  border-color: var(--green-600);
+}
+
+.scale li.navy {
+  color: var(--navy-600);
+  border-color: var(--navy-600);
+}
+
+.h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.h2 small {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--slate-600);
+}
+
+.why {
+  max-width: 64ch;
+  margin-bottom: 34px;
+  font-size: 17px;
+  color: var(--slate-800);
+}
+
+.why p + p {
+  margin-top: 10px;
+}
+
+.sources {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  list-style: none;
+}
+
+.sources > li {
+  display: grid;
+}
+
+.related {
+  margin-top: 34px;
+}
+
+.relatedTitle {
+  padding-bottom: 10px;
+  border-bottom: 2.5px solid var(--navy-900);
+  font-size: 21px;
+}
+
+.related ul {
+  list-style: none;
+}
+
+.rail {
+  position: relative;
+  min-width: 0;
+}
+
+.caveat {
+  margin-top: 22px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--amber-50);
+  font-size: 14px;
+  color: var(--slate-700);
+}
+
+.caveat b {
+  display: block;
+  color: var(--navy-900);
+}
+
+.caveat a {
+  color: var(--slate-800);
+}
+
+.details {
+  margin-top: 20px;
+  font-size: 14px;
+  color: var(--slate-600);
+}
+
+.details dl {
+  display: grid;
+  gap: 6px;
+}
+
+.details dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.details dd {
+  color: var(--navy-900);
+  font-weight: var(--weight-semibold);
+}
+
+@media (max-width: 1000px) {
+  .layout {
+    gap: 40px;
+    grid-template-columns: minmax(0, 1fr) 260px;
+  }
+}
+
+@media (max-width: 900px) {
+  .sources {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Phones: one column, same order. The rail's box disappears so the share bar
+   (ShareRail .actions) sticks to the bottom across the whole result. */
+@media (max-width: 720px) {
+  .crumbRow {
+    padding: 12px var(--page-gutter-sm) 0;
+  }
+
+  .layout {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 16px var(--page-gutter-sm) 32px;
+  }
+
+  .rail {
+    display: contents;
+  }
+
+  .vline {
+    margin: 26px 0 20px 4px;
+  }
+
+  .scale {
+    margin-left: 4px;
+  }
+}

@@ -1,0 +1,73 @@
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.label {
+  font-weight: var(--weight-semibold);
+  font-size: 15px;
+  color: var(--text-strong);
+}
+
+.control {
+  position: relative;
+}
+
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 11px 14px;
+  font-size: 16px; /* 16px prevents zoom on focus on iOS */
+  color: var(--text-strong);
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+textarea.input {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.input::placeholder {
+  color: var(--text-muted);
+}
+
+.input:hover {
+  border-color: var(--border-strong);
+}
+
+.input:focus-visible {
+  outline: none;
+  border-color: var(--navy-600);
+  box-shadow: var(--shadow-focus);
+}
+
+.invalid {
+  border-color: var(--red-600);
+}
+
+.withTrailing .input {
+  padding-right: 120px;
+}
+
+.trailing {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  bottom: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.hint {
+  font-size: 14px;
+  color: var(--slate-600);
+}
+
+.error {
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--red-700);
+}

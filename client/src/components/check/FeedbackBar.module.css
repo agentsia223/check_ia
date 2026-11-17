@@ -1,0 +1,62 @@
+/* Values from the mockup's .fb rule. */
+
+.bar {
+  margin-top: 26px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 15px;
+  color: var(--slate-700);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.question {
+  margin-right: 2px;
+}
+
+.votes {
+  display: flex;
+  gap: 10px;
+}
+
+.vote {
+  border-color: var(--slate-300);
+  color: var(--navy-900);
+}
+
+.report {
+  margin-left: auto;
+  color: var(--navy-600);
+}
+
+.thanks {
+  color: var(--navy-900);
+  font-weight: var(--weight-semibold);
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+  max-width: 64ch;
+  margin-top: 16px;
+}
+
+.formActions {
+  display: flex;
+  gap: 10px;
+}
+
+.error {
+  margin-top: 14px;
+}
+
+@media (max-width: 720px) {
+  .report {
+    margin-left: 0;
+  }
+}

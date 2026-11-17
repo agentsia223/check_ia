@@ -1,0 +1,227 @@
+/* Values from the mockup's .nav, .brand and .on rules. */
+
+.header {
+  position: relative;
+  z-index: 10;
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.skip {
+  position: absolute;
+  left: 12px;
+  top: -100px;
+  z-index: 20;
+  padding: 10px 16px;
+  background: var(--navy-900);
+  color: var(--text-on-brand);
+  font-weight: var(--weight-semibold);
+  border-radius: var(--radius-sm);
+}
+
+.skip:focus {
+  top: 12px;
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  max-width: var(--page-max);
+  height: var(--header-height);
+  margin: 0 auto;
+  padding: 0 var(--page-gutter);
+  font-weight: var(--weight-medium);
+  font-size: 15px;
+  color: var(--slate-700);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-right: 14px;
+}
+
+.logoLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  border-radius: var(--radius-xs);
+}
+
+.beta {
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  color: var(--green-700);
+  background: var(--green-50);
+  border: 1px solid var(--green-100);
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+}
+
+.primary,
+.right {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  height: 100%;
+}
+
+.right {
+  margin-left: auto;
+  gap: 22px;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  min-height: 44px;
+  color: var(--slate-700);
+  text-decoration: none;
+}
+
+.link:hover {
+  color: var(--navy-900);
+}
+
+.active {
+  color: var(--navy-900);
+  font-weight: var(--weight-semibold);
+  box-shadow: 0 2px 0 var(--navy-900);
+}
+
+.account {
+  position: relative;
+}
+
+.accountButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 260px;
+  padding: 0 12px;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  color: var(--navy-900);
+  font-weight: var(--weight-semibold);
+  font-size: 14px;
+}
+
+.accountButton:hover {
+  background: var(--slate-50);
+}
+
+.email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountPanel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  display: grid;
+  gap: 8px;
+  min-width: 240px;
+  padding: 14px;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-ink);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-offset);
+}
+
+.accountPanel[hidden] {
+  display: none;
+}
+
+.signedAs {
+  display: grid;
+  font-size: 13.5px;
+  color: var(--slate-600);
+}
+
+.panelEmail {
+  font-size: 15px;
+  font-weight: var(--weight-semibold);
+  color: var(--navy-900);
+  overflow-wrap: anywhere;
+}
+
+.panelAction {
+  justify-content: flex-start;
+}
+
+.mobile {
+  display: none;
+  margin-left: auto;
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-default);
+  color: var(--navy-900);
+  font-weight: var(--weight-semibold);
+}
+
+.mobilePanel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--header-height);
+  display: grid;
+  gap: 16px;
+  padding: 12px var(--page-gutter-sm) 20px;
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-lg);
+}
+
+.mobileList {
+  display: grid;
+}
+
+.mobileList .link {
+  padding: 0 4px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 17px;
+}
+
+.mobileList .active {
+  box-shadow: inset 3px 0 0 var(--navy-900);
+  padding-left: 12px;
+}
+
+.mobileAccount {
+  display: grid;
+  gap: 12px;
+}
+
+.mobileAction {
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .inner {
+    padding: 0 var(--page-gutter-sm);
+    gap: 12px;
+  }
+
+  .primary,
+  .right {
+    display: none;
+  }
+
+  .mobile {
+    display: block;
+  }
+}

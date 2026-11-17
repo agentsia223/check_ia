@@ -1,0 +1,67 @@
+/* Long-form pages: reliability, legal, 404. */
+
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px var(--page-gutter-sm) 72px;
+  color: var(--slate-800);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.page h1 {
+  font-size: clamp(32px, 6vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin-bottom: 16px;
+}
+
+.page h2 {
+  font-size: 24px;
+  margin: 40px 0 10px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.page p + p {
+  margin-top: 12px;
+}
+
+.page ul {
+  margin: 0 0 16px 24px;
+}
+
+.page li + li {
+  margin-top: 4px;
+}
+
+.page p a,
+.page li a {
+  color: var(--text-link);
+  font-weight: var(--weight-semibold);
+}
+
+.lead {
+  font-size: 19px;
+  color: var(--slate-700);
+}
+
+.facts {
+  font-weight: var(--weight-bold);
+  color: var(--navy-900);
+}
+
+.langSwitch {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}

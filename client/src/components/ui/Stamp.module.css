@@ -1,0 +1,89 @@
+/* Values from the mockup: .stamp (large) and .mini (small). */
+
+.stamp {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--stamp-ink);
+}
+
+.defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.word {
+  display: inline-block;
+}
+
+/* Long labels ("PAS D'IA DÉTECTÉE") wrap between words on narrow screens instead of
+   running off the page. */
+.lg {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.lg .word {
+  max-width: 100%;
+  font-size: clamp(44px, 9vw, 76px);
+  letter-spacing: 0.05em;
+  border: 6px double var(--stamp-ink);
+  border-radius: var(--radius-sm);
+  padding: 6px 28px 10px;
+  transform: rotate(-4deg);
+}
+
+.sm .word {
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  border: 1.5px solid var(--stamp-ink);
+  border-radius: 3px;
+  padding: 1px 7px;
+  transform: rotate(-2deg);
+}
+
+/* Tones. Amber uses darker steps than the mockup so the word meets contrast. */
+.green {
+  --stamp-ink: var(--green-700);
+}
+
+.red {
+  --stamp-ink: var(--red-600);
+}
+
+.amber {
+  --stamp-ink: var(--amber-700);
+}
+
+.lg.amber {
+  --stamp-ink: var(--amber-600);
+}
+
+.navy {
+  --stamp-ink: var(--navy-600);
+}
+
+.animate .word {
+  animation: stamp-in var(--duration-slow) var(--ease-out) both;
+}
+
+@keyframes stamp-in {
+  from {
+    opacity: 0;
+    transform: rotate(-4deg) scale(1.35);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-4deg) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate .word {
+    animation: none;
+  }
+}

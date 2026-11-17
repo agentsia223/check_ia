@@ -1,25 +1,59 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import axios from "axios";
-import { toast } from "react-toastify";
-import { API_BASE_URL } from "../config";
+import { apiFetch, ApiError } from "../lib/api";
 
 export const MIN_RECORDING_MS = 400;
 
+const TRANSCRIBE_TIMEOUT_MS = 120000;
+const TRANSLATE_TIMEOUT_MS = 60000;
+
+export const VOICE_MESSAGES = Object.freeze({
+    added: "Texte ajouté. Modifiez-le si besoin, puis lancez la vérification.",
+    noAudio: "Aucun audio n'a été enregistré.",
+    noTranscript: "Aucune transcription n'a été détectée.",
+    tooShort: "Enregistrement trop court. Maintenez plus longtemps.",
+    signIn: "Connectez-vous pour utiliser la dictée vocale.",
+    unsupported: "L'enregistrement vocal n'est pas disponible sur ce navigateur.",
+    recorderError: "Une erreur s'est produite pendant l'enregistrement.",
+    micDenied: "Impossible d'accéder au microphone.",
+    network: "Connexion au service de transcription impossible. Vérifiez votre connexion internet, puis réessayez.",
+    starting: "Le service vocal démarre, réessayez dans quelques secondes.",
+    badGateway: "Le service vocal est temporairement indisponible. Réessayez dans un instant.",
+    unavailable: "Le service de transcription est momentanément indisponible. Réessayez plus tard.",
+    timeout: "La transcription a pris trop de temps. Essayez un enregistrement plus court.",
+    generic: "Impossible de transcrire cet audio. Veuillez réessayer.",
+});
+
+function transcriptionErrorMessage(error) {
+    if (!(error instanceof ApiError) || error.status === 0) return VOICE_MESSAGES.network;
+    const serverError = typeof error.body?.error === "string" ? error.body.error : "";
+    if (error.status === 503 && error.code === "voice_service_starting") return VOICE_MESSAGES.starting;
+    if (error.status === 502) return VOICE_MESSAGES.badGateway;
+    if (error.status === 503) return VOICE_MESSAGES.unavailable;
+    if (error.status === 504 || /timed out|timeout/i.test(serverError)) return VOICE_MESSAGES.timeout;
+    return VOICE_MESSAGES.generic;
+}
+
 /**
- * Voice dictation for a claim. Records, transcribes in `language`, and — for
- * Bambara — translates the transcript to French, then fills the claim field via
- * `onText`. French dictation skips the translation step (the transcript is the
- * French claim). It does NOT submit anything — the user reviews/edits, then
- * launches verification themselves.
+ * Voice dictation for a claim. Records, transcribes in `language`, and — for Bambara —
+ * translates the transcript to French, then fills the claim field via `onText`. French
+ * dictation skips the translation step. It does NOT submit anything.
  *
  * Phases: idle → recording → transcribing → idle.
  *
- * `getAccessToken` and `onText` may change each render; the latest is always used.
- * Prefer a stable `getAccessToken` to avoid needless keydown-listener re-subscription.
+ * @param {{getAccessToken?: () => string|null, isLoggedIn: boolean, language?: "bm"|"fr",
+ *   onText: (text: string) => void, enabled?: boolean,
+ *   onNotice?: (notice: {tone: "info"|"error", message: string}) => void}} options
+ *   `getAccessToken` is kept for compatibility: requests go through apiFetch, which adds the
+ *   session token itself. `enabled` turns on the Space-bar toggle (desktop only).
+ *   `onNotice` replaces the old toasts; the latest notice is also returned.
+ * @returns {{phase: "idle"|"recording"|"transcribing", transcript: string, isTouch: boolean,
+ *   start: () => Promise<void>, stop: () => void, toggle: () => void,
+ *   notice: {tone: "info"|"error", message: string} | null, clearNotice: () => void}}
  */
-export function useVoiceDictation({ getAccessToken, isLoggedIn, language = "bm", onText, enabled = true }) {
+export function useVoiceDictation({ getAccessToken, isLoggedIn, language = "bm", onText, enabled = true, onNotice }) {
     const [phase, setPhase] = useState("idle");
     const [transcript, setTranscript] = useState("");
+    const [notice, setNotice] = useState(null);
 
     const mediaRecorderRef = useRef(null);
     const mediaStreamRef = useRef(null);
@@ -29,19 +63,29 @@ export function useVoiceDictation({ getAccessToken, isLoggedIn, language = "bm",
     const startPendingRef = useRef(false);
     const stopRequestedRef = useRef(false);
 
-    // Always use the latest language / onText for async completions.
+    // Always use the latest callbacks and language for async completions.
     const onTextRef = useRef(onText);
+    const onNoticeRef = useRef(onNotice);
     const languageRef = useRef(language);
     useEffect(() => {
         onTextRef.current = onText;
+        onNoticeRef.current = onNotice;
         languageRef.current = language;
     });
+
+    const notify = useCallback((tone, message) => {
+        const next = { tone, message };
+        setNotice(next);
+        onNoticeRef.current?.(next);
+    }, []);
+
+    const clearNotice = useCallback(() => setNotice(null), []);
 
     // Touch devices get press-and-hold; pointer devices get the spacebar toggle.
     const isTouch = useRef(
         typeof window !== "undefined" &&
-        typeof window.matchMedia === "function" &&
-        window.matchMedia("(pointer: coarse)").matches
+            typeof window.matchMedia === "function" &&
+            window.matchMedia("(pointer: coarse)").matches
     ).current;
 
     const stopStream = useCallback(() => {
@@ -51,94 +95,59 @@ export function useVoiceDictation({ getAccessToken, isLoggedIn, language = "bm",
         }
     }, []);
 
-    const processAudio = useCallback(async (audioBlob) => {
-        if (!audioBlob || audioBlob.size === 0) {
-            toast.error("Aucun audio n'a été enregistré.");
-            setPhase("idle");
-            return;
-        }
-
-        const lang = languageRef.current;
-        const accessToken = getAccessToken();
-        const formData = new FormData();
-        const audioFile = new File(
-            [audioBlob],
-            `dictation-${lang}-${Date.now()}.webm`,
-            { type: audioBlob.type || "audio/webm" }
-        );
-        formData.append("file", audioFile);
-        formData.append("language", lang);
-
-        setPhase("transcribing");
-        try {
-            const transcriptionResponse = await axios.post(
-                `${API_BASE_URL}bambara/transcribe/`,
-                formData,
-                {
-                    headers: {
-                        Authorization: `Bearer ${accessToken}`,
-                        "Content-Type": "multipart/form-data",
-                    },
-                }
-            );
-            const transcriptText = transcriptionResponse.data.text || "";
-            setTranscript(transcriptText);
-
-            if (!transcriptText.trim()) {
-                toast.error("Aucune transcription n'a été détectée.");
+    const processAudio = useCallback(
+        async (audioBlob) => {
+            if (!audioBlob || audioBlob.size === 0) {
+                notify("error", VOICE_MESSAGES.noAudio);
                 setPhase("idle");
                 return;
             }
 
-            // Bambara is translated to French; French is used as-is.
-            let frenchText = transcriptText;
-            if (lang === "bm") {
-                const translationResponse = await axios.post(
-                    `${API_BASE_URL}bambara/translate/`,
-                    { text: transcriptText, source_lang: "bm", target_lang: "fr" },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${accessToken}`,
-                            "Content-Type": "application/json",
-                        },
-                    }
-                );
-                frenchText = translationResponse.data.translated_text || transcriptText;
-            }
+            const lang = languageRef.current;
+            const formData = new FormData();
+            const audioFile = new File([audioBlob], `dictation-${lang}-${Date.now()}.webm`, {
+                type: audioBlob.type || "audio/webm",
+            });
+            formData.append("file", audioFile);
+            formData.append("language", lang);
 
-            onTextRef.current?.(frenchText);
-            setPhase("idle");
-            toast.success(
-                "Texte ajouté. Modifiez-le si besoin, puis lancez la vérification."
-            );
-        } catch (error) {
-            console.error("Erreur lors de la transcription vocale :", error);
-            const httpStatus = error?.response?.status;
-            const serverError = error?.response?.data?.error || "";
-            let message;
-            if (!error?.response) {
-                // No response reached the browser: network error, dropped
-                // connection, or a worker killed mid-request (surfaces as CORS).
-                message =
-                    "Connexion au service de transcription impossible. Vérifiez votre connexion et réessayez.";
-            } else if (httpStatus === 503 && error.response.data?.code === "voice_service_starting") {
-                message = "Le service vocal démarre, réessayez dans quelques secondes.";
-            } else if (httpStatus === 502) {
-                message =
-                    "Le service vocal est temporairement indisponible. Réessayez dans un instant.";
-            } else if (httpStatus === 503) {
-                message =
-                    "Le service de transcription est momentanément indisponible. Réessayez plus tard.";
-            } else if (httpStatus === 504 || /timed out|timeout/i.test(serverError)) {
-                message =
-                    "La transcription a pris trop de temps. Essayez un enregistrement plus court.";
-            } else {
-                message = "Impossible de transcrire cet audio. Veuillez réessayer.";
+            setPhase("transcribing");
+            try {
+                const transcription = await apiFetch("bambara/transcribe/", {
+                    method: "POST",
+                    formData,
+                    timeoutMs: TRANSCRIBE_TIMEOUT_MS,
+                });
+                const transcriptText = transcription?.text || "";
+                setTranscript(transcriptText);
+
+                if (!transcriptText.trim()) {
+                    notify("error", VOICE_MESSAGES.noTranscript);
+                    setPhase("idle");
+                    return;
+                }
+
+                // Bambara is translated to French; French is used as-is.
+                let frenchText = transcriptText;
+                if (lang === "bm") {
+                    const translation = await apiFetch("bambara/translate/", {
+                        method: "POST",
+                        json: { text: transcriptText, source_lang: "bm", target_lang: "fr" },
+                        timeoutMs: TRANSLATE_TIMEOUT_MS,
+                    });
+                    frenchText = translation?.translated_text || transcriptText;
+                }
+
+                onTextRef.current?.(frenchText);
+                setPhase("idle");
+                notify("info", VOICE_MESSAGES.added);
+            } catch (error) {
+                notify("error", transcriptionErrorMessage(error));
+                setPhase("idle");
             }
-            toast.error(message);
-            setPhase("idle");
-        }
-    }, [getAccessToken]);
+        },
+        [notify]
+    );
 
     useEffect(() => {
         processAudioRef.current = processAudio;
@@ -147,16 +156,17 @@ export function useVoiceDictation({ getAccessToken, isLoggedIn, language = "bm",
     const start = useCallback(async () => {
         if (phase !== "idle") return;
         if (!isLoggedIn) {
-            toast.error("Vous devez être connecté pour soumettre une information.");
+            notify("error", VOICE_MESSAGES.signIn);
             return;
         }
         if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
-            toast.error("L'enregistrement vocal n'est pas disponible sur ce navigateur.");
+            notify("error", VOICE_MESSAGES.unsupported);
             return;
         }
 
         startPendingRef.current = true;
         stopRequestedRef.current = false;
+        setNotice(null);
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -185,30 +195,28 @@ export function useVoiceDictation({ getAccessToken, isLoggedIn, language = "bm",
                 const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
                 stopStream();
                 if (elapsed < MIN_RECORDING_MS) {
-                    toast.error("Enregistrement trop court. Maintenez plus longtemps.");
+                    notify("error", VOICE_MESSAGES.tooShort);
                     setPhase("idle");
                     return;
                 }
                 processAudioRef.current(audioBlob);
             };
 
-            recorder.onerror = (event) => {
-                console.error("Erreur du MediaRecorder :", event?.error || event);
+            recorder.onerror = () => {
                 stopStream();
                 setPhase("idle");
-                toast.error("Une erreur s'est produite pendant l'enregistrement.");
+                notify("error", VOICE_MESSAGES.recorderError);
             };
 
             recorder.start();
             setPhase("recording");
-        } catch (error) {
+        } catch {
             startPendingRef.current = false;
-            console.error("Erreur lors de l'enregistrement :", error);
             stopStream();
             setPhase("idle");
-            toast.error("Impossible d'accéder au microphone.");
+            notify("error", VOICE_MESSAGES.micDenied);
         }
-    }, [phase, isLoggedIn, stopStream]);
+    }, [phase, isLoggedIn, stopStream, notify]);
 
     const stop = useCallback(() => {
         if (phase === "recording") {
@@ -250,5 +258,5 @@ export function useVoiceDictation({ getAccessToken, isLoggedIn, language = "bm",
         };
     }, [stopStream]);
 
-    return { phase, transcript, isTouch, start, stop, toggle };
+    return { phase, transcript, isTouch, start, stop, toggle, notice, clearNotice };
 }
