@@ -118,6 +118,18 @@ function SubmitFact() {
         submitForVerification(texte);
     };
 
+    // Wake the (sleeping) verdict model as soon as the page opens, so it is ready by the
+    // time the claim is typed and searched.
+    useEffect(() => {
+        if (!isLoggedIn) return;
+        Promise.resolve(
+            axios.post(`${API_BASE_URL}verdict/warm/`, null, {
+                headers: { Authorization: `Bearer ${getAccessToken()}` },
+            })
+        ).catch(() => {});
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoggedIn]);
+
     // Polling pour vérifier le statut
     useEffect(() => {
         let interval;
