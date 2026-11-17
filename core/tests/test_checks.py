@@ -202,9 +202,10 @@ class CreateTextCheckTest(CheckApiTestCase):
         response = self.client.post("/api/checks/", {"kind": "text", "text": "Une affirmation"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-    def test_ip_is_taken_from_last_forwarded_hop(self, analyze_text):
+    def test_ip_is_taken_from_the_client_entry_of_forwarded_for(self, analyze_text):
+        # Railway shape: "<client>, <edge>".
         self.client.post("/api/checks/", {"kind": "text", "text": "Une affirmation"}, format="json",
-                         HTTP_X_FORWARDED_FOR="1.1.1.1, 203.0.113.9", **self.anon())
+                         HTTP_X_FORWARDED_FOR="203.0.113.9, 1.1.1.1", **self.anon())
         self.assertEqual(Check.objects.get().ip_hash, checks_service.hash_ip("203.0.113.9"))
 
     def test_analysis_error_status_becomes_error_state(self, analyze_text):
@@ -863,8 +864,17 @@ class ClientIpTest(TestCase):
     def ip(self, **meta):
         return checks_service.client_ip(self.factory.get("/api/checks/", **meta))
 
-    def test_x_real_ip_not_trusted_by_default(self):
-        self.assertFalse(settings.CHECKS_TRUST_X_REAL_IP)
+    def test_defaults_match_railway_edge(self):
+        # Railway overwrites X-Real-IP and sends X-Forwarded-For as "<client>, <edge>".
+        self.assertTrue(settings.CHECKS_TRUST_X_REAL_IP)
+        self.assertEqual(settings.CHECKS_TRUSTED_PROXY_COUNT, 2)
+        self.assertEqual(self.ip(HTTP_X_REAL_IP="198.51.100.7", HTTP_X_FORWARDED_FOR="198.51.100.7, 2.2.2.2"),
+                         "198.51.100.7")
+        # Without X-Real-IP the client is the 2nd entry from the right, not the edge.
+        self.assertEqual(self.ip(HTTP_X_FORWARDED_FOR="198.51.100.7, 2.2.2.2"), "198.51.100.7")
+
+    @override_settings(CHECKS_TRUST_X_REAL_IP=False, CHECKS_TRUSTED_PROXY_COUNT=1)
+    def test_x_real_ip_ignored_when_trust_is_off(self):
         self.assertEqual(self.ip(HTTP_X_REAL_IP="198.51.100.7", HTTP_X_FORWARDED_FOR="1.1.1.1, 2.2.2.2"),
                          "2.2.2.2")
         self.assertEqual(self.ip(HTTP_X_REAL_IP="198.51.100.7", REMOTE_ADDR="192.0.2.44"), "192.0.2.44")
@@ -879,7 +889,7 @@ class ClientIpTest(TestCase):
         self.assertEqual(self.ip(HTTP_X_REAL_IP=" 198.51.100.7 ", HTTP_X_FORWARDED_FOR="1.1.1.1, 2.2.2.2"),
                          "198.51.100.7")
 
-    @override_settings(CHECKS_TRUST_X_REAL_IP=True)
+    @override_settings(CHECKS_TRUST_X_REAL_IP=True, CHECKS_TRUSTED_PROXY_COUNT=1)
     def test_trusted_empty_x_real_ip_falls_through(self):
         self.assertEqual(self.ip(HTTP_X_REAL_IP="  ", HTTP_X_FORWARDED_FOR="1.1.1.1, 2.2.2.2"), "2.2.2.2")
         self.assertEqual(self.ip(HTTP_X_REAL_IP="  ", REMOTE_ADDR="192.0.2.44"), "192.0.2.44")
