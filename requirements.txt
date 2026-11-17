@@ -1,5 +1,6 @@
 beautifulsoup4==4.12.3
 celery==5.4.0
+kombu==5.5.4
 deep-translator==1.11.4
 django==5.1.1
 django-cors-headers==4.4.0
