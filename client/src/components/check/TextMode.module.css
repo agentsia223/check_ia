@@ -1,0 +1,89 @@
+/* Values from the mockup's .composer .ta rule. */
+
+.wrap {
+  display: grid;
+}
+
+.label {
+  font-weight: var(--weight-semibold);
+  font-size: 15px;
+  color: var(--text-strong);
+  margin-bottom: 4px;
+}
+
+.hint {
+  font-size: 14px;
+  color: var(--slate-600);
+  margin-bottom: 8px;
+}
+
+.textarea {
+  display: block;
+  width: 100%;
+  min-height: 132px;
+  padding: 18px 20px 8px;
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--text-strong);
+  background: transparent;
+  border: 0;
+  border-radius: 11px 11px 0 0;
+  resize: vertical;
+}
+
+.textarea::placeholder {
+  color: var(--slate-500);
+}
+
+/* The card's :focus-within ring marks focus; keep a visible fallback inside it. */
+.textarea:focus-visible {
+  outline: 2px solid var(--navy-600);
+  outline-offset: -4px;
+}
+
+/* Voice mode: the field sits under the recorder, so it gets its own frame. */
+.boxed {
+  min-height: 112px;
+  padding: 12px 14px;
+  font-size: 17px;
+  border: 1.5px solid var(--border-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+}
+
+.boxed:focus-visible {
+  outline: none;
+  border-color: var(--navy-600);
+  box-shadow: var(--shadow-focus);
+}
+
+.footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0 20px 10px;
+}
+
+.boxed + .footer {
+  padding: 6px 0 0;
+}
+
+.counter {
+  margin-left: auto;
+  font-size: 13px;
+  color: var(--slate-600);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.over {
+  color: var(--red-700);
+  font-weight: var(--weight-semibold);
+}
+
+.error {
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--red-700);
+}

@@ -1,0 +1,20 @@
+/* logo-full.svg: 1500×1500 canvas, artwork roughly x 7.5–92.5 %, y 34–66 %.
+   Show a 128 px render through a 110×42 window → wordmark about 40 px tall. */
+.crop {
+  --logo-size: 128px;
+  position: relative;
+  display: inline-block;
+  flex: none;
+  width: calc(var(--logo-size) * 0.86);
+  height: calc(var(--logo-size) * 0.33);
+  overflow: hidden;
+}
+
+.image {
+  position: absolute;
+  left: calc(var(--logo-size) * -0.07);
+  top: calc(var(--logo-size) * -0.335);
+  width: var(--logo-size);
+  height: var(--logo-size);
+  max-width: none;
+}

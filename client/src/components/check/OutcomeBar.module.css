@@ -1,0 +1,30 @@
+.bar {
+  display: flex;
+  width: 100%;
+  overflow: hidden;
+  gap: 2px;
+}
+
+.lg {
+  height: 44px;
+  margin: 24px 0;
+  border-radius: var(--radius-xs);
+}
+
+.sm {
+  height: 16px;
+  border-radius: var(--radius-xs);
+}
+
+.segment {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-basis: 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--text-on-brand);
+  font-size: 13px;
+  font-weight: var(--weight-bold);
+}

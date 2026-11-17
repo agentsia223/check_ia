@@ -1,6 +1,7 @@
 {
   "short_name": "Check-IA",
-  "name": "Check-IA - Vérification des Faits par l'IA",
+  "name": "Check-IA",
+  "description": "Vérifiez une affirmation ou une image et obtenez un verdict sourcé.",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,11 +21,21 @@
     {
       "src": "logo512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "logo512-maskable.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#28348a",
-  "background_color": "#ffffff"
+  "background_color": "#ffffff",
+  "lang": "fr",
+  "scope": "/",
+  "dir": "ltr"
 }

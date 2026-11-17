@@ -15,6 +15,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
     api_key=API_TOKEN,
+    # Celery runs with --pool=threads, where task time limits are not enforced:
+    # without this a stalled call would hold a worker thread (SDK default: 600 s).
+    timeout=120.0,
 )
 
 def _first_links(web_sources):

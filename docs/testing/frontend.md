@@ -1,19 +1,21 @@
 # Frontend Tests
 
-Frontend tests use **Jest** and **React Testing Library**, included by default with Create React App.
+Frontend tests use **Vitest** (configured in `client/vite.config.js`) and **React Testing Library**.
 
 ## Running Tests
 
 ```bash
 cd client
-npm test -- --watchAll=false
+npm test
 ```
+
+`npm test` runs `vitest run` once (no watch mode); use `npx vitest` to watch.
 
 ### With Coverage
 
 ```bash
 cd client
-npm test -- --watchAll=false --coverage
+npx vitest run --coverage
 ```
 
 ## Test Structure
@@ -21,7 +23,7 @@ npm test -- --watchAll=false --coverage
 ```
 client/src/
 ├── App.test.js             # Main app smoke test
-├── setupTests.js           # Jest DOM setup
+├── test/setup.js           # jest-dom matchers and jsdom shims
 └── components/
     └── __tests__/          # Component-level tests (optional)
 ```
@@ -55,13 +57,13 @@ test('displays the expected heading', () => {
 Components that use the Supabase client need it mocked in tests:
 
 ```javascript
-jest.mock('../lib/supabase', () => ({
+vi.mock('../lib/supabase', () => ({
   supabase: {
     auth: {
-      onAuthStateChange: jest.fn(() => ({
-        data: { subscription: { unsubscribe: jest.fn() } }
+      onAuthStateChange: vi.fn(() => ({
+        data: { subscription: { unsubscribe: vi.fn() } }
       })),
-      getSession: jest.fn(() => Promise.resolve({ data: { session: null } })),
+      getSession: vi.fn(() => Promise.resolve({ data: { session: null } })),
     }
   }
 }));

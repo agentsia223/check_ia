@@ -371,3 +371,126 @@ def upload_and_verify_image_task(user_id, user_email, user_name, image_data, ima
             'success': False,
             'error': str(e)
         }
+
+
+# ---------------------------------------------------------------------------
+# Public checks (/api/checks/). The legacy tasks above are unchanged.
+# These tasks never create Fact rows: new checks are unlisted by default.
+# ---------------------------------------------------------------------------
+from celery.exceptions import SoftTimeLimitExceeded  # noqa: E402
+from django.utils import timezone  # noqa: E402
+
+
+def _finish_check(check_id, **fields):
+    """Save the outcome only if the check is still running (a cancel or a
+    timeout wins over a late result). Returns True if saved."""
+    from .models import Check
+
+    fields['completed_at'] = timezone.now()
+    return Check.objects.filter(pk=check_id, state='running').update(**fields) == 1
+
+
+def _fail_check(check_id):
+    """Save the check as a safe error and remove its stored image."""
+    from .models import Check
+    from .services.checks import discard_check_image
+
+    failed = _finish_check(
+        check_id, state='error', verdict='', explanation=SAFE_ANALYSIS_ERROR_MESSAGE, sources=[], confidence=None,
+    )
+    if failed:
+        check = Check.objects.filter(pk=check_id).exclude(image_path='').first()
+        if check is not None:
+            discard_check_image(check)
+    return failed
+
+
+def _load_running_check(check_id):
+    from .models import Check
+
+    check = Check.objects.filter(pk=check_id).first()
+    if check is None or check.state != 'running':
+        return None
+    return check
+
+
+@shared_task(soft_time_limit=240, time_limit=270)
+def run_text_check(check_id):
+    """Analyse a text check with the same pipeline as the legacy submissions."""
+    from .services.checks import map_text_status, normalize_sources, MISSING_EXPLANATION_MESSAGE
+
+    check = _load_running_check(check_id)
+    if check is None:
+        return {'success': False, 'check_id': check_id}
+    try:
+        analysis_result, web_sources = analyze_text(check.claim)
+        statut = analysis_result.get('statut') if isinstance(analysis_result, dict) else None
+        state, verdict = map_text_status(statut)
+        if state == 'error':
+            # analyze_text embeds raw exception text in 'explication' on ERREUR.
+            logger.error(f"run_text_check: analyse en ERREUR pour le check {check_id}")
+            saved = _fail_check(check_id)
+        else:
+            explanation = analysis_result.get('explication') if isinstance(analysis_result, dict) else None
+            explanation = str(explanation).strip() if explanation else ''
+            saved = _finish_check(
+                check_id,
+                state=state,
+                verdict=verdict,
+                explanation=explanation or MISSING_EXPLANATION_MESSAGE,
+                sources=normalize_sources(web_sources),
+                confidence=None,
+            )
+        return {'success': saved, 'check_id': check_id, 'state': state}
+    except SoftTimeLimitExceeded:
+        logger.error(f"run_text_check: délai dépassé pour le check {check_id}")
+        _fail_check(check_id)
+        return {'success': False, 'check_id': check_id, 'state': 'error'}
+    except Exception:
+        logger.exception(f"run_text_check: échec pour le check {check_id}")
+        _fail_check(check_id)
+        return {'success': False, 'check_id': check_id, 'state': 'error'}
+
+
+@shared_task(soft_time_limit=240, time_limit=270)
+def run_image_check(check_id):
+    """Analyse an image check (content or AI detection) with the legacy image services."""
+    from .services.checks import map_image_status, MISSING_EXPLANATION_MESSAGE
+
+    check = _load_running_check(check_id)
+    if check is None:
+        return {'success': False, 'check_id': check_id}
+    try:
+        if check.kind == 'image_ai':
+            result = detect_ai_generated_image(check.image_url)
+        else:
+            result = verify_image_content(check.image_url, check.claim)
+        result = result if isinstance(result, dict) else {}
+        state, verdict = map_image_status(result.get('statut'))
+        if state == 'error':
+            logger.error(f"run_image_check: analyse en ERREUR pour le check {check_id}")
+            saved = _fail_check(check_id)
+        else:
+            try:
+                confidence = max(0, min(100, int(result.get('confidence'))))
+            except (TypeError, ValueError):
+                confidence = None
+            explanation = result.get('explication')
+            explanation = str(explanation).strip() if explanation else ''
+            saved = _finish_check(
+                check_id,
+                state=state,
+                verdict=verdict,
+                explanation=explanation or MISSING_EXPLANATION_MESSAGE,
+                sources=[],
+                confidence=confidence,
+            )
+        return {'success': saved, 'check_id': check_id, 'state': state}
+    except SoftTimeLimitExceeded:
+        logger.error(f"run_image_check: délai dépassé pour le check {check_id}")
+        _fail_check(check_id)
+        return {'success': False, 'check_id': check_id, 'state': 'error'}
+    except Exception:
+        logger.exception(f"run_image_check: échec pour le check {check_id}")
+        _fail_check(check_id)
+        return {'success': False, 'check_id': check_id, 'state': 'error'}

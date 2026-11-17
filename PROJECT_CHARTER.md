@@ -43,7 +43,7 @@ Contributors agree that any contributions submitted to the project are made unde
 The following are trademarks of the Check-IA project:
 
 - **"Check-IA"** — The project name
-- **Check-IA logo** — The visual identity located at `client/public/logo_check.png`
+- **Check-IA logo** — The visual identity located in `client/public/brand/` (`logo-full.svg`, `logo-icon.svg` and their white variants)
 - **check-ia.app** — The project's domain name
 
 These trademarks may not be used in derivative works, forks, or third-party products without prior written permission from the project maintainers, except as required by the Apache License 2.0 for describing the origin of the work. This ensures that users can trust that products bearing the Check-IA name meet the project's standards for quality and accuracy.

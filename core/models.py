@@ -119,3 +119,84 @@ class VerifiedMedia(models.Model):
 
     def __str__(self):
         return f"{self.media_type} pour {self.fact.texte[:30]}"
+
+
+# ---------------------------------------------------------------------------
+# Public checks (web redesign). Separate from the legacy tables above, which
+# the mobile app still uses unchanged.
+# ---------------------------------------------------------------------------
+import secrets  # noqa: E402
+
+CHECK_PUBLIC_ID_ALPHABET = 'abcdefghijklmnopqrstuvwxyz234567'  # lowercase base32
+CHECK_PUBLIC_ID_LENGTH = 10
+
+
+# Migration 0011 references this function by path (core.models.generate_check_public_id)
+# as the field default: do not rename, move or delete it.
+def generate_check_public_id():
+    """Random, non-guessable public id (10 lowercase base32 characters)."""
+    return ''.join(secrets.choice(CHECK_PUBLIC_ID_ALPHABET) for _ in range(CHECK_PUBLIC_ID_LENGTH))
+
+
+class Check(models.Model):
+    KIND_CHOICES = [
+        ('text', 'Texte'),
+        ('image_content', "Contenu d'image"),
+        ('image_ai', 'Détection IA'),
+    ]
+    STATE_CHOICES = [
+        ('running', 'En cours'),
+        ('done', 'Terminée'),
+        ('error', 'Erreur'),
+        ('cancelled', 'Annulée'),
+    ]
+    VERDICT_CHOICES = [
+        ('vrai', 'Vrai'),
+        ('faux', 'Faux'),
+        ('incertain', 'Incertain'),
+        ('ia_detectee', 'IA détectée'),
+        ('ia_non_detectee', "Pas d'IA détectée"),
+        ('analyse', 'Analysée'),
+    ]
+
+    public_id = models.CharField(
+        max_length=CHECK_PUBLIC_ID_LENGTH, unique=True, default=generate_check_public_id, editable=False
+    )
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
+    claim = models.TextField(blank=True, default='')
+    image_url = models.URLField(max_length=2000, blank=True, default='')
+    image_path = models.CharField(max_length=1000, blank=True, default='')
+    state = models.CharField(max_length=20, choices=STATE_CHOICES, default='running', db_index=True)
+    verdict = models.CharField(max_length=20, choices=VERDICT_CHOICES, blank=True, default='')
+    explanation = models.TextField(blank=True, default='')
+    sources = models.JSONField(default=list, blank=True)
+    confidence = models.IntegerField(null=True, blank=True)
+    listed = models.BooleanField(default=False, db_index=True)
+    owner_id = models.UUIDField(null=True, blank=True, db_index=True)  # Supabase user UUID
+    anon_token = models.CharField(max_length=128, blank=True, default='', db_index=True)
+    ip_hash = models.CharField(max_length=64, blank=True, default='', db_index=True)  # salted SHA-256
+    # default (not auto_now_add) so the history copy can keep original dates.
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.public_id} - {self.kind} - {self.state}"
+
+
+class CheckFeedback(models.Model):
+    # Named check_ref because a field called `check` would shadow Model.check();
+    # the column is still check_id for people reading the table in the console.
+    check_ref = models.ForeignKey(Check, on_delete=models.CASCADE, related_name='feedback', db_column='check_id')
+    helpful = models.BooleanField(null=True, blank=True)
+    message = models.TextField(blank=True, default='')
+    ip_hash = models.CharField(max_length=64, blank=True, default='', db_index=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Avis sur {self.check_ref_id}"

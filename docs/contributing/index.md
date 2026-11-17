@@ -38,7 +38,7 @@ DJANGO_SETTINGS_MODULE=config.settings_test pytest -v
 
 ```bash
 cd client
-npm test -- --watchAll=false
+npm test
 ```
 
 ## Pull Request Process

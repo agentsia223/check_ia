@@ -27,3 +27,19 @@ urlpatterns = [
     path('bambara/warm/', bambara_warm_view, name='bambara_warm'),
     path('verdict/warm/', verdict_warm_view, name='verdict_warm'),
 ]
+
+
+# Public checks API (web redesign). `checks/claim/` must precede `checks/<id>/`.
+from core.views_checks import (  # noqa: E402
+    CheckListCreateView, CheckClaimView, CheckDetailView, CheckCancelView,
+    CheckFeedbackView, CheckRelatedView,
+)
+
+urlpatterns += [
+    path('checks/', CheckListCreateView.as_view(), name='checks'),
+    path('checks/claim/', CheckClaimView.as_view(), name='checks_claim'),
+    path('checks/<str:public_id>/', CheckDetailView.as_view(), name='check_detail'),
+    path('checks/<str:public_id>/cancel/', CheckCancelView.as_view(), name='check_cancel'),
+    path('checks/<str:public_id>/feedback/', CheckFeedbackView.as_view(), name='check_feedback'),
+    path('checks/<str:public_id>/related/', CheckRelatedView.as_view(), name='check_related'),
+]

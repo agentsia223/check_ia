@@ -719,3 +719,22 @@ def test_analyze_text_wakes_the_model_only_when_it_is_the_engine(monkeypatch, se
     settings.VERDICT_ENGINE = "llama"
     ai_analysis.analyze_text("texte")
     warm_mock.assert_called_once_with()
+
+
+def test_perplexity_search_sets_timeout_and_handles_timeout(monkeypatch):
+    import requests
+
+    post = Mock(side_effect=requests.Timeout("too slow"))
+    monkeypatch.setattr(perplexity_search.requests, "post", post)
+
+    assert perplexity_search.search_with_perplexity("claim") == {
+        "verification_content": "",
+        "sources": [],
+        "citations": [],
+        "raw_content": "",
+    }
+    assert post.call_args.kwargs["timeout"] == 60
+
+
+def test_llm_client_has_request_timeout():
+    assert llm.client.timeout == 120.0

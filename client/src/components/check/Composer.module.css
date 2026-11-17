@@ -1,0 +1,188 @@
+/* Values from the mockup's .composer, .bar, .tab, .cnt, kbd, .chipsrow and .chip rules. */
+
+.composer {
+  display: grid;
+}
+
+.card {
+  position: relative;
+  border: 1.5px solid var(--border-ink);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-offset);
+}
+
+.dragging {
+  border-style: dashed;
+  background: var(--navy-50);
+}
+
+.dropOverlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--navy-50) 88%, transparent);
+  font-weight: var(--weight-semibold);
+  font-size: 17px;
+  color: var(--navy-900);
+  pointer-events: none;
+}
+
+.panel:focus {
+  outline: none;
+}
+
+/* ---- Bottom bar: mode tabs, shortcut, submit ---- */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 10px 10px 12px;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--slate-50);
+  border-radius: 0 0 11px 11px;
+}
+
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 8px 13px;
+  border-radius: 7px;
+  font-weight: var(--weight-semibold);
+  font-size: 14.5px;
+  color: var(--slate-700);
+  white-space: nowrap;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.tab:hover {
+  background: var(--slate-100);
+}
+
+.tab[data-state="active"] {
+  background: var(--navy-900);
+  color: var(--text-on-brand);
+}
+
+.tab:focus-visible {
+  outline: 3px solid var(--navy-600);
+  outline-offset: 2px;
+}
+
+.tabIcon {
+  flex: none;
+}
+
+.shortcut {
+  margin-left: auto;
+  margin-right: 8px;
+  font-size: 13px;
+  color: var(--slate-600);
+  white-space: nowrap;
+}
+
+.shortcut kbd {
+  font: var(--weight-semibold) 12px var(--font-body);
+  border: 1px solid var(--slate-300);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  padding: 1px 6px;
+  color: var(--slate-700);
+  background: var(--surface-card);
+}
+
+.submit {
+  flex: none;
+}
+
+/* ---- Notices ---- */
+
+.notice {
+  margin-top: 16px;
+}
+
+.voiceLoading {
+  padding: 18px 20px;
+  color: var(--slate-600);
+}
+
+/* ---- Example chips ---- */
+
+.examples {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+  font-size: 14px;
+  color: var(--slate-600);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 13px;
+  border: 1px solid var(--slate-300);
+  border-radius: var(--radius-pill);
+  background: var(--surface-card);
+  font-size: 14px;
+  font-weight: var(--weight-medium);
+  color: var(--navy-900);
+  text-align: left;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.chip:hover {
+  border-color: var(--navy-600);
+}
+
+@media (pointer: coarse), (max-width: 640px) {
+  .shortcut {
+    display: none;
+  }
+
+  .submit {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .bar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .tabs {
+    flex: 1 1 100%;
+    gap: 4px;
+  }
+
+  .tab {
+    flex: 1 1 auto;
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .submit {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .tabIcon {
+    display: none;
+  }
+}

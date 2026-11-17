@@ -1,0 +1,77 @@
+/* Values from the mockup's .rrow rule. */
+
+.row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  min-height: 44px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--navy-900);
+  text-decoration: none;
+}
+
+.row:hover .claim {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.mark {
+  padding-top: 2px;
+  min-width: 0;
+}
+
+/* Long labels ("GÉNÉRÉE PAR IA", "PAS D'IA DÉTECTÉE") wrap onto two lines inside the
+   96 px column instead of running over the claim. Every single word fits on one line. */
+.mark .stamp {
+  max-width: 100%;
+  white-space: normal;
+}
+
+.mark .stamp > span {
+  line-height: 1.15;
+  max-width: 100%;
+}
+
+.text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.claim {
+  font-weight: var(--weight-semibold);
+  font-size: 16px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: 13.5px;
+  color: var(--slate-600);
+}
+
+.status {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: var(--weight-semibold);
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--slate-100);
+  color: var(--slate-700);
+}
+
+.running {
+  background: var(--navy-50);
+  color: var(--navy-700);
+}
+
+.error {
+  background: var(--red-50);
+  color: var(--red-700);
+}
+
+.visibility {
+  white-space: nowrap;
+}

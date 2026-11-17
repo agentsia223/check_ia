@@ -10,3 +10,5 @@ site/
 htmlcov/
 .coverage
 .DS_Store
+# Agent working notes
+.superpowers/

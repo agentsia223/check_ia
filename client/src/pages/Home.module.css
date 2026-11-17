@@ -1,0 +1,258 @@
+/* Values from the mockup's screen 1: .hero, .lede, .hint, .recent and .trust rules. */
+
+.home {
+  display: grid;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr);
+  gap: 72px;
+  width: 100%;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 64px var(--page-gutter) 56px;
+  align-items: start;
+}
+
+.lead {
+  min-width: 0;
+}
+
+.headline {
+  font-family: var(--font-display);
+  font-weight: var(--weight-bold);
+  font-size: clamp(42px, 8.5vw, 72px);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  color: var(--navy-900);
+}
+
+.lede {
+  max-width: 34em;
+  margin: 18px 0 28px;
+  font-size: 19px;
+  color: var(--slate-700);
+}
+
+/* ---- Facts line (mockup .hint) ---- */
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin-top: 20px;
+  font-size: 14.5px;
+  color: var(--slate-700);
+}
+
+.facts li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.factIcon {
+  color: var(--green-600);
+}
+
+/* ---- Recent checks (mockup .recent) ---- */
+
+.recent {
+  min-width: 0;
+}
+
+.recentHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 4px 16px;
+  padding-bottom: 2px;
+  border-bottom: 2.5px solid var(--navy-900);
+}
+
+.recentHead h2 {
+  font-family: var(--font-display);
+  font-size: 21px;
+  padding-bottom: 8px;
+}
+
+.recentAll {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: var(--weight-semibold);
+  font-size: 14px;
+  color: var(--navy-600);
+  text-decoration: none;
+}
+
+.recentAll:hover {
+  text-decoration: underline;
+}
+
+.recentMessage {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  padding: 18px 0;
+  font-size: 15px;
+  color: var(--slate-700);
+}
+
+.recentLoading {
+  padding-top: 4px;
+}
+
+.skeletonRow {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.skeletonMark,
+.skeletonText {
+  height: 13px;
+  border-radius: var(--radius-xs);
+  background: var(--slate-200);
+  animation: fade 1.4s ease-in-out infinite;
+}
+
+.skeletonMark {
+  width: 64px;
+  height: 18px;
+}
+
+/* ---- Reliability band (mockup .trust) ---- */
+
+.band {
+  background: var(--navy-900);
+  color: var(--text-on-brand);
+}
+
+.bandInner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 72px;
+  align-items: center;
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 40px var(--page-gutter);
+}
+
+.bandTitle {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1.12;
+  color: var(--text-on-brand);
+}
+
+.bandText {
+  margin-top: 8px;
+  font-size: 15px;
+  color: var(--navy-200);
+}
+
+.bandLink {
+  display: inline-block;
+  padding: 12px 0;
+  margin: -12px 0;
+  color: var(--text-on-brand);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.bandLink:focus-visible {
+  outline-color: var(--text-on-brand);
+}
+
+.legend {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--navy-100);
+}
+
+.legendValue {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--text-on-brand);
+}
+
+.legendLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+@keyframes fade {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ---- Tablet and phone: one column, in reading order ---- */
+
+@media (max-width: 960px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 48px;
+    padding: 40px var(--page-gutter-sm) 48px;
+  }
+
+  .bandInner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    padding: 32px var(--page-gutter-sm);
+  }
+}
+
+@media (max-width: 640px) {
+  .lede {
+    font-size: 17px;
+    margin: 14px 0 22px;
+  }
+
+  .bandTitle {
+    font-size: 25px;
+  }
+
+  .legend {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    font-size: 13.5px;
+  }
+
+  .legendValue {
+    font-size: 22px;
+  }
+
+  .legendLabel {
+    align-items: flex-start;
+  }
+
+  .swatch {
+    margin-top: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonMark,
+  .skeletonText {
+    animation: none;
+  }
+}

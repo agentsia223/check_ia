@@ -39,6 +39,24 @@ if _cors_origins == '*':
 else:
     CORS_ALLOWED_ORIGINS = _cors_origins.split(',')
 
+# The web client sends X-Anon-Token for signed-out checks (/api/checks/).
+from corsheaders.defaults import default_headers  # noqa: E402
+CORS_ALLOW_HEADERS = (*default_headers, 'x-anon-token')
+
+# Salt for hashing client IPs in the checks quotas (only the hash is stored).
+CHECKS_IP_HASH_SALT = os.getenv('CHECKS_IP_HASH_SALT', '') or SECRET_KEY
+# Client IP for the anonymous quotas (see core/services/checks.py::client_ip).
+# Measured on Railway on 2026-11-17 with an echo service: the edge overwrites
+# a client-sent X-Real-IP with the real address, and rewrites X-Forwarded-For
+# to "<client>, <edge>" (client-sent entries are dropped). So X-Real-IP is
+# trusted by default, and the fallback reads the 2nd X-Forwarded-For entry
+# from the right. On another host, re-check both before relying on the quotas.
+try:
+    CHECKS_TRUSTED_PROXY_COUNT = max(1, int(os.getenv('CHECKS_TRUSTED_PROXY_COUNT', '2')))
+except ValueError:
+    CHECKS_TRUSTED_PROXY_COUNT = 2
+CHECKS_TRUST_X_REAL_IP = os.getenv('CHECKS_TRUST_X_REAL_IP', 'True').lower() == 'true'
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
