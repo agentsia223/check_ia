@@ -1,134 +1,32 @@
 import logging
-import random
-import time
-import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
-from deep_translator import GoogleTranslator
-from deep_translator.exceptions import TooManyRequests, RequestError
+
+from django.conf import settings
+
+from core.services import llama_verdict
 from core.services.llm import llm_analysis
 from core.services.perplexity_search import search_with_perplexity
-import os
-
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-# Charger le modèle pré-entraîné Roberta pour la classification de fausses nouvelles
-model_name = "hamzab/roberta-fake-news-classification"
-logging.info(f"Chargement du modèle {model_name}...")
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-model = AutoModelForSequenceClassification.from_pretrained(model_name)
-logging.info("Modèle et tokenizer chargés avec succès.")
-
-
-def _translate_official(text, source, target):
-    """Translate via the official paid Bambara API translate endpoint (fr/en supported)."""
-    from core.services.bambara_voice import translate_bambara_text
-
-    result = translate_bambara_text(text, source_lang=source, target_lang=target)
-    translated = (result or {}).get("translated_text", "")
-    translated = translated.strip() if isinstance(translated, str) else ""
-    if not translated:
-        raise RuntimeError("Traduction officielle vide")
-    return translated
-
-
-def translate_text(text, source='fr', target='en'):
-    """Translate, preferring the official paid API and falling back to the free scraper."""
-    try:
-        return _translate_official(text, source, target)
-    except Exception as e:
-        logging.warning(
-            f"Traduction officielle indisponible ({e}), repli sur le service gratuit"
-        )
-
-    try:
-        return _translate_with_retry(text, source=source, target=target)
-    except Exception as e:
-        logging.error(f"Traduction impossible: {e}")
-        return None
-
-
-def _translate_with_retry(text, source='fr', target='en', max_attempts=3):
-    """Translate with a small retry/backoff for transient rate-limit/network errors."""
-    last_error = None
-    for attempt in range(1, max_attempts + 1):
-        try:
-            return GoogleTranslator(source=source, target=target).translate(text)
-        except (TooManyRequests, RequestError) as e:
-            last_error = e
-            if attempt == max_attempts:
-                break
-            delay = (2 ** (attempt - 1)) + random.uniform(0, 0.5)
-            logging.warning(
-                f"Traduction échouée (tentative {attempt}/{max_attempts}): {e}. "
-                f"Nouvelle tentative dans {delay:.1f}s..."
-            )
-            time.sleep(delay)
-    raise last_error
 
 
 def analyze_text(text):
     try:
         logging.info(f"=== DÉBUT DE L'ANALYSE ===")
         logging.info(f"Texte original à analyser: {text}")
-        
-        # Traduire le texte en anglais (API officielle en priorité, repli sur le service gratuit)
-        logging.info("ÉTAPE 1: Traduction du texte en anglais...")
-        translated_text = translate_text(text, source='fr', target='en')
 
-        if translated_text is None:
-            logging.warning("Classifieur RoBERTa ignoré : traduction indisponible")
-            prediction = None
-            confidence = None
-            probabilities = None
-            initial_result = "indéterminé"
-            translated_text = text
-        else:
-            logging.info(f"Texte traduit: {translated_text}")
-
-            # Préparer l'entrée pour le modèle
-            logging.info("ÉTAPE 2: Préparation pour le modèle RoBERTa...")
-            input_str = f"<title> Title <content> {translated_text} <end>"
-            logging.info(f"Input formaté pour RoBERTa: {input_str[:100]}...")
-
-            input_ids = tokenizer.encode_plus(input_str, max_length=512, padding="max_length", truncation=True, return_tensors="pt")
-            logging.info("Texte encodé avec succès pour le modèle.")
-
-            # Effectuer la prédiction
-            logging.info("ÉTAPE 3: Prédiction avec le modèle RoBERTa...")
-            device = 'cuda' if torch.cuda.is_available() else 'cpu'
-            model.to(device)
-            logging.info(f"Utilisation du dispositif : {device}")
-
-            with torch.no_grad():
-                logging.info("Effectuation de la prédiction...")
-                output = model(input_ids['input_ids'].to(device), attention_mask=input_ids['attention_mask'].to(device))
-                logging.info("Prédiction terminée.")
-
-            # Convertir la prédiction en probabilité
-            logging.info("Analyse des résultats du modèle RoBERTa...")
-            probabilities = torch.nn.functional.softmax(output.logits, dim=-1)[0]
-            prediction = torch.argmax(probabilities).item()
-            confidence = probabilities[prediction].item()
-
-            logging.info(f"Résultat de la prédiction RoBERTa: {prediction}")
-            logging.info(f"Probabilités: {probabilities.tolist()}")
-            logging.info(f"Confiance: {confidence:.4f}")
-
-            # Traduire le résultat en français
-            initial_result = "vérifié" if prediction == 1 else "rejeté"
-            logging.info(f"Résultat initial RoBERTa: {initial_result} (confiance: {confidence:.2%})")
+        if getattr(settings, "VERDICT_ENGINE", "gpt") == "llama":
+            # Le modèle dort quand il est inactif : on le réveille pendant la recherche.
+            llama_verdict.warm_up_async()
 
         # Utiliser Perplexity pour rechercher des sources et vérifier le fait
-        logging.info("ÉTAPE 4: Recherche avec Perplexity...")
+        logging.info("ÉTAPE 1: Recherche avec Perplexity...")
         perplexity_result = search_with_perplexity(text)
         logging.info(f"Résultat Perplexity - Sources: {len(perplexity_result['sources'])}, Citations: {len(perplexity_result.get('citations', []))}")
-        
+
         if perplexity_result['verification_content']:
             logging.info(f"Contenu de vérification Perplexity (extrait): {perplexity_result['verification_content'][:300]}...")
-        
+
         # Log des sources avec leurs extraits
         for i, source in enumerate(perplexity_result['sources'][:3], 1):
             logging.info(f"Source {i} détaillée:")
@@ -138,15 +36,14 @@ def analyze_text(text):
             if source.get('snippet'):
                 logging.info(f"  Extrait: {source['snippet'][:150]}...")
 
-        # Utiliser l'API OpenRouter pour analyser les résultats combinés et obtenir une décision finale
-        logging.info("ÉTAPE 5: Analyse finale avec OpenRouter...")
+        # Verdict final : modèle Check-IA ou GPT-4o-mini selon VERDICT_ENGINE
+        logging.info("ÉTAPE 2: Verdict final...")
         final_analysis = llm_analysis(
-            translated_text, 
-            initial_result, 
+            text,
             perplexity_result['sources'],
             perplexity_result['verification_content']
         )
-        
+
         logging.info(f"=== RÉSULTAT FINAL ===")
         if isinstance(final_analysis, dict):
             logging.info(f"Statut final: {final_analysis.get('statut', 'INDÉTERMINÉE')}")
@@ -155,7 +52,7 @@ def analyze_text(text):
             logging.info(f"Sources principales: {final_analysis.get('sources_principales', [])}")
         else:
             logging.info(f"Décision finale (format legacy): {final_analysis}")
-        
+
         # Retourner les résultats dans le bon format
         return final_analysis, perplexity_result['sources']
 

@@ -13,7 +13,7 @@ from deep_translator import GoogleTranslator
 from django.conf import settings
 from supabase import create_client, Client
 import json
-from .services.ai_analysis import analyze_text
+from .services import llama_verdict
 from .services.image_verification import verify_image_content, detect_ai_generated_image
 from .services.supabase_storage import upload_image_to_supabase, create_bucket_if_not_exists
 from .services.bambara_voice import (
@@ -316,6 +316,15 @@ def bambara_transcribe_view(request):
 def bambara_warm_view(request):
     """Wake the (sleeping) voice service in the background."""
     warm_up_async()
+    return Response({"status": "warming"}, status=status.HTTP_202_ACCEPTED)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def verdict_warm_view(request):
+    """Wake the (sleeping) verdict model in the background when the check page opens."""
+    if getattr(settings, "VERDICT_ENGINE", "gpt") == "llama":
+        llama_verdict.warm_up_async()
     return Response({"status": "warming"}, status=status.HTTP_202_ACCEPTED)
 
 

@@ -77,11 +77,11 @@ beforeEach(() => {
     });
     window.MediaRecorder = MockMediaRecorder;
     postApi.mockReset();
-    // Warm-up calls to the voice service are routed away so they never consume
+    // Warm-up calls (voice service, verdict model) are routed away so they never consume
     // the per-test queued responses.
     axios.post.mockReset();
     axios.post.mockImplementation((url, ...rest) =>
-        url.endsWith("bambara/warm/")
+        url.endsWith("bambara/warm/") || url.endsWith("verdict/warm/")
             ? Promise.resolve({ data: { status: "warming" } })
             : postApi(url, ...rest)
     );
@@ -466,16 +466,32 @@ describe("Language journeys", () => {
     });
 });
 
+const voiceWarmCalls = () =>
+    axios.post.mock.calls.filter(([url]) => url.endsWith("bambara/warm/"));
+
 test("switching to Bambara warms up the voice service (once, not for French)", async () => {
     renderSubmitFact();
-    expect(axios.post).not.toHaveBeenCalled();
+    expect(voiceWarmCalls()).toHaveLength(0);
 
     await selectLanguage(/^bambara$/i);
 
     expect(axios.post).toHaveBeenCalledWith(`${API_BASE_URL}bambara/warm/`, null, {
         headers: { Authorization: "Bearer access-token" },
     });
-    expect(axios.post).toHaveBeenCalledTimes(1);
+    expect(voiceWarmCalls()).toHaveLength(1);
+});
+
+test("opening the page wakes the verdict model once", async () => {
+    renderSubmitFact();
+
+    await waitFor(() =>
+        expect(axios.post).toHaveBeenCalledWith(`${API_BASE_URL}verdict/warm/`, null, {
+            headers: { Authorization: "Bearer access-token" },
+        })
+    );
+    expect(
+        axios.post.mock.calls.filter(([url]) => url.endsWith("verdict/warm/"))
+    ).toHaveLength(1);
 });
 
 test("a 503 'voice_service_starting' transcription error shows the starting toast", async () => {

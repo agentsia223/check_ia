@@ -4,7 +4,7 @@ from core.views import (
     FactViewSet, SubmissionViewSet, VerifiedMediaViewSet, KeywordViewSet,
     verify_image_content_view, detect_ai_image_view, get_image_verifications_view,
     check_task_status_view, bambara_translate_view, bambara_transcribe_view,
-    bambara_warm_view,
+    bambara_warm_view, verdict_warm_view,
 )
 from core.services.deep_translator import get_facts_translated
 # from . import views
@@ -25,4 +25,5 @@ urlpatterns = [
     path('bambara/translate/', bambara_translate_view, name='bambara_translate'),
     path('bambara/transcribe/', bambara_transcribe_view, name='bambara_transcribe'),
     path('bambara/warm/', bambara_warm_view, name='bambara_warm'),
+    path('verdict/warm/', verdict_warm_view, name='verdict_warm'),
 ]
