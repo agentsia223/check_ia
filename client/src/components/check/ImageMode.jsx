@@ -4,12 +4,6 @@ import { ACCEPTED_IMAGE_TYPES } from "../../lib/image";
 import { formatCount, TEXT_MAX_CHARS } from "./TextMode";
 import styles from "./ImageMode.module.css";
 
-/** Messages for `validateImage` results. */
-export const IMAGE_ERRORS = Object.freeze({
-    type: "Ce fichier n'est pas une image prise en charge. Choisissez une image JPEG, PNG ou WebP.",
-    size: "Cette image dépasse 10 Mo. Choisissez une image plus légère, ou envoyez une capture d'écran.",
-});
-
 export const IMAGE_KINDS = Object.freeze([
     {
         value: "image_content",

@@ -16,10 +16,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .authentication import SupabaseAuthentication
-from .models import Check, CheckFeedback, ImageVerification
+from .models import Check, CheckFeedback
 from .services import checks as rules
 from .services.keywords_extractor import extract_keywords
-from .services.supabase_storage import delete_image_from_supabase, upload_image_to_supabase
+from .services.supabase_storage import upload_image_to_supabase
 from .tasks import SAFE_ANALYSIS_ERROR_MESSAGE, run_image_check, run_text_check
 
 logger = logging.getLogger(__name__)
@@ -237,9 +237,12 @@ class CheckListCreateView(ChecksAPIView):
             task.delay(check.pk)
         except Exception:
             logger.exception(f"Impossible de mettre en file le check {check.pk}")
-            Check.objects.filter(pk=check.pk, state='running').update(
+            failed = Check.objects.filter(pk=check.pk, state='running').update(
                 state='error', explanation=SAFE_ANALYSIS_ERROR_MESSAGE, completed_at=timezone.now(),
             )
+            if failed:
+                check.refresh_from_db()
+                rules.discard_check_image(check)
 
         check.refresh_from_db()
         return Response(rules.serialize_check(check, request), status=status.HTTP_201_CREATED)
@@ -291,16 +294,8 @@ class CheckDetailView(ChecksAPIView):
         check, error = self._owned_check(request, public_id)
         if error:
             return error
-        image_path = check.image_path
         check.delete()
-        # Copied history shares its image with the legacy record the mobile app shows.
-        if image_path and not ImageVerification.objects.filter(image_path=image_path).exists():
-            try:
-                result = delete_image_from_supabase(image_path)
-                if not result.get('success'):
-                    logger.warning(f"Image non supprimée du stockage: {result.get('error')}")
-            except Exception:
-                logger.exception("Erreur lors de la suppression de l'image du stockage")
+        rules.discard_check_image(check)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
@@ -318,6 +313,7 @@ class CheckCancelView(ChecksAPIView):
             return error_response('not_running', "Cette vérification n'est plus en cours.",
                                   status.HTTP_409_CONFLICT)
         check.refresh_from_db()
+        rules.discard_check_image(check)
         return Response(rules.serialize_check(check, request))
 
 

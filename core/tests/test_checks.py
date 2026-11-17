@@ -311,8 +311,9 @@ class CreateImageCheckTest(CheckApiTestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.content)
         self.assertEqual(response.json()["verdict"], "ia_detectee")
 
+    @patch("core.services.checks.delete_image_from_supabase", return_value={"success": True})
     @patch("core.tasks.verify_image_content")
-    def test_image_analysis_error(self, verify_image_content, upload):
+    def test_image_analysis_error(self, verify_image_content, delete_image, upload):
         verify_image_content.return_value = {
             "statut": "ERREUR", "explication": "Une erreur s'est produite: boom", "details": {}, "confidence": 0,
         }
@@ -323,7 +324,9 @@ class CreateImageCheckTest(CheckApiTestCase):
         self.assertEqual(body["state"], "error")
         self.assertIsNone(body["verdict"])
         self.assertIsNone(body["confidence"])
+        self.assertEqual(body["image_url"], "")
         self.assertNotIn("boom", response.content.decode())
+        delete_image.assert_called_once_with(UPLOAD_OK["file_path"])
 
     def test_image_not_jpeg_png_webp_rejected(self, upload):
         cases = [
@@ -466,7 +469,7 @@ class CheckDetailTest(CheckApiTestCase):
         check.refresh_from_db()
         self.assertFalse(check.listed)
 
-    @patch("core.views_checks.delete_image_from_supabase", return_value={"success": True})
+    @patch("core.services.checks.delete_image_from_supabase", return_value={"success": True})
     def test_owner_can_delete(self, delete_image):
         check = make_check(owner_id=self.user.id, kind="image_ai", image_path="u/ai_detection/x.jpeg")
         self.client.force_authenticate(user=self.user)
@@ -476,7 +479,7 @@ class CheckDetailTest(CheckApiTestCase):
         self.assertFalse(Check.objects.filter(pk=check.pk).exists())
         delete_image.assert_called_once_with("u/ai_detection/x.jpeg")
 
-    @patch("core.views_checks.delete_image_from_supabase")
+    @patch("core.services.checks.delete_image_from_supabase")
     def test_delete_keeps_image_shared_with_legacy_record(self, delete_image):
         ImageVerification.objects.create(
             supabase_user_id=self.user.id, user_email=self.user.email, image_path="u/content/shared.jpeg",

@@ -1,5 +1,5 @@
 // Calls for the /api/checks/ resource (see the Task 1 contract).
-import { apiFetch, apiUpload } from "./api";
+import { ApiError, apiFetch } from "./api";
 
 const enc = encodeURIComponent;
 
@@ -29,7 +29,13 @@ export function createImageCheck({ file, kind, claimText = "", onProgress }) {
     formData.append("kind", kind);
     formData.append("image", file);
     formData.append("claim_text", claimText);
-    return apiUpload("checks/", formData, onProgress);
+    // The upload code loads on demand; failing to download it is a network failure.
+    return import("./upload").then(
+        ({ apiUpload }) => apiUpload("checks/", formData, onProgress),
+        () => {
+            throw new ApiError(0, "network");
+        }
+    );
 }
 
 /** @param {string} id @returns {Promise<Check>} */

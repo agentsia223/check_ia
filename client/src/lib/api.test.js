@@ -1,4 +1,5 @@
-import { apiFetch, apiUpload, ApiError, errorMessageFr } from "./api";
+import { apiFetch, ApiError, errorMessageFr } from "./api";
+import { apiUpload } from "./upload";
 import { getSession, refreshSessionDetailed, signOutLocal } from "./supabase";
 import { getAnonToken } from "./anon";
 import { API_BASE_URL } from "./config";

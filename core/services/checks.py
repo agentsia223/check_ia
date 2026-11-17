@@ -1,14 +1,23 @@
 """Rules for the public checks API: verdict mapping, sources, identity, quotas
 and serialisation. Kept free of HTTP concerns so tasks and views share them.
 """
+import base64
+import binascii
 import hashlib
 import hmac
+import json
+import logging
 import re
+import time
 from datetime import timedelta
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from django.conf import settings
 from django.utils import timezone
+
+from core.services.supabase_storage import create_signed_image_url, delete_image_from_supabase
+
+logger = logging.getLogger(__name__)
 
 # Quotas -------------------------------------------------------------------
 ANON_FREE_CHECKS = 1
@@ -197,12 +206,48 @@ def _start_of_today():
     return timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
 
 
+def discard_check_image(check):
+    """Remove a check's stored image once the check no longer needs it.
+
+    The file is deleted only if no legacy ImageVerification uses the same path
+    (copied history shares its image with the record the mobile app shows).
+    Then image_path/image_url are cleared on the row, if it still exists. On a
+    storage failure the row keeps its path so a later delete can retry. Never
+    raises: failures are logged.
+    """
+    from core.models import Check, ImageVerification
+
+    image_path = check.image_path
+    if not image_path:
+        return
+    try:
+        if not ImageVerification.objects.filter(image_path=image_path).exists():
+            result = delete_image_from_supabase(image_path)
+            if not result.get('success'):
+                logger.warning(f"Image non supprimée du stockage: {result.get('error')}")
+                return
+        if check.pk is not None:
+            Check.objects.filter(pk=check.pk, image_path=image_path).update(image_path='', image_url='')
+        check.image_path = check.image_url = ''
+    except Exception:
+        logger.exception("Erreur lors de la suppression de l'image du stockage")
+
+
 def expire_stale_checks(queryset):
-    """Save checks still running after RUNNING_TIMEOUT_SECONDS as errors."""
+    """Save checks still running after RUNNING_TIMEOUT_SECONDS as errors and
+    remove their images. Returns the number of checks expired."""
+    from core.models import Check
+
     cutoff = timezone.now() - timedelta(seconds=RUNNING_TIMEOUT_SECONDS)
-    return queryset.filter(state='running', created_at__lt=cutoff).update(
+    stale_ids = list(queryset.filter(state='running', created_at__lt=cutoff).values_list('pk', flat=True))
+    if not stale_ids:
+        return 0
+    expired = Check.objects.filter(pk__in=stale_ids, state='running').update(
         state='error', verdict='', explanation=CHECK_TIMEOUT_MESSAGE, completed_at=timezone.now(),
     )
+    for check in Check.objects.filter(pk__in=stale_ids, state='error').exclude(image_path=''):
+        discard_check_image(check)
+    return expired
 
 
 def anon_quota_reached(token):
@@ -248,8 +293,77 @@ def sniff_image_type(image_file):
 
 
 # Serialisation ----------------------------------------------------------------
+# Signed image links (Supabase, one year) are renewed when this close to expiry.
+SIGNED_URL_REFRESH_MARGIN = timedelta(days=30)
+SIGNING_RETRY_SECONDS = 3600
+_SIGNING_FAILURES = {}  # check pk -> _monotonic() of the last failed signing
+_SIGNING_FAILURES_MAX = 10000
+
+
 def _iso(value):
     return value.isoformat() if value else None
+
+
+def _monotonic():
+    return time.monotonic()
+
+
+def _signed_url_expiry(url):
+    """For a signed storage URL, (True, exp or None) read from the JWT in its
+    `token` query parameter (not verified). (False, None) if the URL is not a
+    signed URL or its token cannot be decoded."""
+    try:
+        tokens = parse_qs(urlparse(url).query).get('token')
+        if not tokens:
+            return False, None
+        parts = tokens[0].split('.')
+        if len(parts) != 3:
+            return False, None
+        payload_b64 = parts[1] + '=' * (-len(parts[1]) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(payload_b64.encode('ascii')))
+    except (ValueError, UnicodeError, binascii.Error):
+        return False, None
+    if not isinstance(payload, dict):
+        return False, None
+    exp = payload.get('exp')
+    if isinstance(exp, bool) or not isinstance(exp, (int, float)):
+        return True, None
+    return True, exp
+
+
+def current_image_url(check):
+    """The check's image URL, re-signed for a year if it is a signed URL that
+    has no expiry, has expired or expires within SIGNED_URL_REFRESH_MARGIN.
+
+    The common case (no image, unsigned URL, or a link valid for a while) makes
+    no network call. A signing failure is logged, the old URL returned, and not
+    retried for SIGNING_RETRY_SECONDS (per process).
+    """
+    url = check.image_url or ''
+    if not url or not check.image_path:
+        return url
+    is_signed, exp = _signed_url_expiry(url)
+    if not is_signed or (exp is not None and exp - time.time() > SIGNED_URL_REFRESH_MARGIN.total_seconds()):
+        return url
+    failed_at = _SIGNING_FAILURES.get(check.pk)
+    if failed_at is not None and _monotonic() - failed_at < SIGNING_RETRY_SECONDS:
+        return url
+    try:
+        fresh = create_signed_image_url(check.image_path)
+        if not fresh:
+            raise RuntimeError("URL signée vide")
+    except Exception as e:
+        logger.warning(f"Impossible de renouveler l'URL de l'image du check {check.pk}: {type(e).__name__}")
+        if len(_SIGNING_FAILURES) >= _SIGNING_FAILURES_MAX:
+            _SIGNING_FAILURES.clear()
+        _SIGNING_FAILURES[check.pk] = _monotonic()
+        return url
+    from core.models import Check
+
+    _SIGNING_FAILURES.pop(check.pk, None)
+    Check.objects.filter(pk=check.pk).update(image_url=fresh)
+    check.image_url = fresh
+    return fresh
 
 
 def serialize_check(check, request):
@@ -258,7 +372,7 @@ def serialize_check(check, request):
         'id': check.public_id,
         'kind': check.kind,
         'claim': check.claim,
-        'image_url': check.image_url or '',
+        'image_url': current_image_url(check),
         'state': check.state,
         'verdict': check.verdict or None,
         'explanation': check.explanation,

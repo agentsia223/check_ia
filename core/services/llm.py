@@ -157,5 +157,8 @@ IMPORTANT: Base ta décision sur les FAITS SPÉCIFIQUES trouvés dans les source
         return {
             "statut": fallback_status,
             "explication": f"Une erreur s'est produite lors de l'analyse détaillée. Résultat basé sur l'analyse initiale: {initial_result}. Erreur: {str(e)}",
-            "sources_principales": [source.get('link', '') for source in web_sources[:3] if source.get('link')]
+            "sources_principales": [source.get('link', '') for source in web_sources[:3] if source.get('link')],
+            # Read only by the web checks task (run_text_check), which treats
+            # this as an error. Legacy callers read the three keys above.
+            "analysis_failed": True,
         }

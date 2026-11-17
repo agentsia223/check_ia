@@ -391,9 +391,18 @@ def _finish_check(check_id, **fields):
 
 
 def _fail_check(check_id):
-    return _finish_check(
+    """Save the check as a safe error and remove its stored image."""
+    from .models import Check
+    from .services.checks import discard_check_image
+
+    failed = _finish_check(
         check_id, state='error', verdict='', explanation=SAFE_ANALYSIS_ERROR_MESSAGE, sources=[], confidence=None,
     )
+    if failed:
+        check = Check.objects.filter(pk=check_id).exclude(image_path='').first()
+        if check is not None:
+            discard_check_image(check)
+    return failed
 
 
 def _load_running_check(check_id):
@@ -417,6 +426,10 @@ def run_text_check(check_id):
         analysis_result, web_sources = analyze_text(check.claim)
         statut = analysis_result.get('statut') if isinstance(analysis_result, dict) else None
         state, verdict = map_text_status(statut)
+        if isinstance(analysis_result, dict) and analysis_result.get('analysis_failed'):
+            # llm_analysis failed and fell back to the local classifier with the
+            # exception text in 'explication': not a verdict for the web.
+            state, verdict = 'error', ''
         if state == 'error':
             # analyze_text embeds raw exception text in 'explication' on ERREUR.
             logger.error(f"run_text_check: analyse en ERREUR pour le check {check_id}")

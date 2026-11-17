@@ -20,9 +20,8 @@ export class ApiError extends Error {
     }
 }
 
-const UPLOAD_TIMEOUT_MS = 120000;
-
-const urlFor = (path) => `${API_BASE_URL}${String(path).replace(/^\/+/, "")}`;
+/** Absolute URL of an API path. Shared with upload.js. */
+export const urlFor = (path) => `${API_BASE_URL}${String(path).replace(/^\/+/, "")}`;
 
 const codeForStatus = (status) => {
     if (status === 400) return "invalid";
@@ -35,7 +34,7 @@ const codeForStatus = (status) => {
     return "http_error";
 };
 
-const parseBody = (text) => {
+export const parseBody = (text) => {
     if (!text) return null;
     try {
         return JSON.parse(text);
@@ -52,7 +51,7 @@ const toApiError = (status, body) =>
         body
     );
 
-function authHeaders(token, withAnon) {
+export function authHeaders(token, withAnon) {
     const headers = {};
     if (token) headers.Authorization = `Bearer ${token}`;
     if (!token || withAnon) headers["X-Anon-Token"] = getAnonToken();
@@ -79,7 +78,7 @@ function refreshOnce() {
  * the session and throws ApiError(0, "network"); only a refused refresh (or a retry
  * that is still 401) signs out.
  */
-async function withAuth(send) {
+export async function withAuth(send) {
     const session = await getSession().catch(() => null);
     let result = await send(session?.access_token ?? null);
     if (result.status === 401 && session) {
@@ -159,66 +158,6 @@ export async function apiFetch(path, options = {}) {
         return mockFetch(path, options);
     }
     return realFetch(path, options);
-}
-
-const abortError = (signal) => signal?.reason ?? new DOMException("Aborted", "AbortError");
-
-function xhrSend(path, formData, token, onProgress, signal) {
-    return new Promise((resolve, reject) => {
-        if (signal?.aborted) {
-            reject(abortError(signal));
-            return;
-        }
-        const xhr = new XMLHttpRequest();
-        const onCallerAbort = () => xhr.abort();
-        const done = () => signal?.removeEventListener("abort", onCallerAbort);
-        xhr.open("POST", urlFor(path));
-        xhr.timeout = UPLOAD_TIMEOUT_MS;
-        Object.entries(authHeaders(token, false)).forEach(([name, value]) =>
-            xhr.setRequestHeader(name, value)
-        );
-        xhr.upload.onprogress = (event) => {
-            if (event.lengthComputable && event.total > 0) {
-                onProgress?.(event.loaded / event.total);
-            }
-        };
-        xhr.onload = () => {
-            done();
-            if (xhr.status >= 200 && xhr.status < 300) onProgress?.(1);
-            resolve({ status: xhr.status, body: parseBody(xhr.responseText) });
-        };
-        xhr.onerror = () => {
-            done();
-            reject(new ApiError(0, "network"));
-        };
-        xhr.ontimeout = () => {
-            done();
-            reject(new ApiError(0, "timeout"));
-        };
-        xhr.onabort = () => {
-            done();
-            reject(abortError(signal));
-        };
-        signal?.addEventListener("abort", onCallerAbort, { once: true });
-        xhr.send(formData);
-    });
-}
-
-/**
- * POST multipart data with upload progress.
- * @param {string} path
- * @param {FormData} formData
- * @param {(fraction: number) => void} [onProgress] called with 0..1.
- * @param {{signal?: AbortSignal}} [options] aborting rejects with the AbortError (not an ApiError).
- * @returns {Promise<any>} parsed JSON body.
- * @throws {ApiError} same rules as apiFetch.
- */
-export async function apiUpload(path, formData, onProgress, { signal } = {}) {
-    if (MOCK_API) {
-        const { mockUpload } = await import("./mockApi.js");
-        return mockUpload(path, formData, onProgress);
-    }
-    return withAuth((token) => xhrSend(path, formData, token, onProgress, signal));
 }
 
 const SERVER_MESSAGE_STATUSES = new Set([400, 403, 409, 429]);

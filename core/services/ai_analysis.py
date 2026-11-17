@@ -1,5 +1,6 @@
 import logging
 import random
+import threading
 import time
 import torch
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
@@ -50,13 +51,44 @@ def translate_text(text, source='fr', target='en'):
         return None
 
 
+# deep_translator's GoogleTranslator calls requests.get() without a timeout and
+# offers no way to set one, so each attempt runs in a daemon thread and we stop
+# waiting after this many seconds. (Celery runs with --pool=threads, where task
+# time limits are not enforced.)
+TRANSLATE_ATTEMPT_TIMEOUT = 20
+
+
+def _google_translate_bounded(text, source, target):
+    """Run one GoogleTranslator call, raising TimeoutError if it outlives
+    TRANSLATE_ATTEMPT_TIMEOUT. A stalled call is abandoned, not killed: its
+    daemon thread lingers until the socket returns or the process exits."""
+    outcome = {}
+
+    def _run():
+        try:
+            outcome["value"] = GoogleTranslator(source=source, target=target).translate(text)
+        except BaseException as e:  # re-raised in the caller's thread
+            outcome["error"] = e
+
+    worker = threading.Thread(target=_run, name="google-translate", daemon=True)
+    worker.start()
+    worker.join(TRANSLATE_ATTEMPT_TIMEOUT)
+    if worker.is_alive():
+        raise TimeoutError(
+            f"GoogleTranslator n'a pas répondu en {TRANSLATE_ATTEMPT_TIMEOUT}s"
+        )
+    if "error" in outcome:
+        raise outcome["error"]
+    return outcome["value"]
+
+
 def _translate_with_retry(text, source='fr', target='en', max_attempts=3):
     """Translate with a small retry/backoff for transient rate-limit/network errors."""
     last_error = None
     for attempt in range(1, max_attempts + 1):
         try:
-            return GoogleTranslator(source=source, target=target).translate(text)
-        except (TooManyRequests, RequestError) as e:
+            return _google_translate_bounded(text, source, target)
+        except (TooManyRequests, RequestError, TimeoutError) as e:
             last_error = e
             if attempt == max_attempts:
                 break

@@ -1,10 +1,10 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useParams } from "react-router-dom";
-import Composer from "./Composer";
+import Composer, { preloadComposerParts } from "./Composer";
 import { AuthContext } from "../../auth/AuthContext";
 import { createImageCheck, createTextCheck } from "../../lib/checks";
-import { compressImage } from "../../lib/image";
+import { compressImage } from "../../lib/compressImage";
 import { ApiError } from "../../lib/api";
 
 vi.mock("../../lib/checks", () => ({
@@ -12,10 +12,7 @@ vi.mock("../../lib/checks", () => ({
     createImageCheck: vi.fn(),
 }));
 
-vi.mock("../../lib/image", async (importOriginal) => {
-    const actual = await importOriginal();
-    return { ...actual, compressImage: vi.fn() };
-});
+vi.mock("../../lib/compressImage", () => ({ compressImage: vi.fn() }));
 
 vi.mock("../../lib/api", async (importOriginal) => {
     const actual = await importOriginal();
@@ -59,6 +56,9 @@ const openImageMode = async (user) => {
 
 const pick = (input, file) => fireEvent.change(input, { target: { files: [file] } });
 const submitButton = () => screen.getByRole("button", { name: "Vérifier" });
+
+// The Image mode is lazy; the app preloads it on intent. See Composer.lazy.test.jsx.
+beforeAll(() => preloadComposerParts());
 
 beforeEach(() => {
     URL.createObjectURL = vi.fn(() => "blob:apercu");

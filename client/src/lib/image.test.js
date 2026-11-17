@@ -1,4 +1,5 @@
-import { validateImage, compressImage, MAX_IMAGE_BYTES } from "./image";
+import { validateImage, MAX_IMAGE_BYTES } from "./image";
+import { compressImage } from "./compressImage";
 
 const makeFile = (type = "image/png", size = 1000, name = "photo.png") => {
     const file = new File(["x"], name, { type });

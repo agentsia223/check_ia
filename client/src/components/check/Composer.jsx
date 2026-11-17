@@ -4,16 +4,33 @@ import Button from "../ui/Button";
 import Icon from "../ui/Icon";
 import { Tab, TabList, TabPanel, Tabs } from "../ui/Tabs";
 import TextMode, { TEXT_MAX_CHARS } from "./TextMode";
-import ImageMode, { IMAGE_ERRORS } from "./ImageMode";
-import CreateFailureNotice from "./CreateFailureNotice";
 import { useAuth } from "../../auth/AuthContext";
 import { createImageCheck, createTextCheck } from "../../lib/checks";
-import { compressImage, validateImage } from "../../lib/image";
+import { IMAGE_ERRORS, validateImage } from "../../lib/image";
 import { FAILURE_MESSAGES, describeCreateFailure } from "../../lib/createFailure";
+import { lazyWithPreload } from "../../lib/lazyWithPreload";
 import styles from "./Composer.module.css";
 
 // The voice recorder (and its dictation hook) loads only when its tab is opened.
 const VoiceMode = lazy(() => import("./VoiceMode"));
+
+// Kept out of the home page's first load: the Image mode, image compression and the
+// failure notice. They are preloaded as soon as the visitor points at or focuses the
+// composer (or pastes or drags an image), so they normally render without a fallback.
+const [ImageMode, preloadImageMode] = lazyWithPreload(() => import("./ImageMode"));
+const [CreateFailureNotice, preloadFailureNotice] = lazyWithPreload(() => import("./CreateFailureNotice"));
+const loadCompressImage = () => import("../../lib/compressImage");
+
+const ignore = () => {};
+
+/** Start loading the parts of the composer that are not in the first load. */
+export function preloadComposerParts() {
+    return Promise.all([preloadImageMode(), preloadFailureNotice(), loadCompressImage()]);
+}
+
+const preloadQuietly = () => {
+    preloadComposerParts().catch(ignore);
+};
 
 export { FAILURE_MESSAGES };
 
@@ -52,7 +69,11 @@ export default function Composer() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    const [mode, setModeState] = useState(() => MODE_PARAM[searchParams.get("mode")] ?? "text");
+    const [mode, setModeState] = useState(() => {
+        const initial = MODE_PARAM[searchParams.get("mode")] ?? "text";
+        if (initial === "image") preloadQuietly();
+        return initial;
+    });
     const [text, setText] = useState("");
     const [translated, setTranslated] = useState(false);
     const [image, setImage] = useState({ file: null, error: "" });
@@ -67,6 +88,8 @@ export default function Composer() {
     const examplesId = `examples${useId().replace(/[^a-zA-Z0-9_-]/g, "")}`;
     const textRef = useRef(null);
     const fileRef = useRef(null);
+    // Set when the file input should take focus but the Image mode is still loading.
+    const pendingFileFocus = useRef(false);
     const rootRef = useRef(null);
     const submittingRef = useRef(false);
 
@@ -81,6 +104,7 @@ export default function Composer() {
     const setMode = useCallback((next) => {
         if (modeRef.current === next) return;
         modeRef.current = next;
+        if (next !== "image") pendingFileFocus.current = false;
         setModeState(next);
         setFailure(null);
     }, []);
@@ -92,8 +116,17 @@ export default function Composer() {
     useEffect(() => {
         if (!focusRequest) return;
         const target = focusRequest.target === "file" ? fileRef.current : textRef.current;
-        target?.focus();
+        if (target) target.focus();
+        else if (focusRequest.target === "file") pendingFileFocus.current = true;
     }, [focusRequest]);
+
+    const setFileInput = useCallback((node) => {
+        fileRef.current = node;
+        if (node && pendingFileFocus.current) {
+            pendingFileFocus.current = false;
+            node.focus();
+        }
+    }, []);
 
     const textReady = text.trim().length > 0 && text.length <= TEXT_MAX_CHARS;
     let canSubmit;
@@ -104,6 +137,7 @@ export default function Composer() {
 
     const acceptFile = useCallback(
         (file) => {
+            preloadQuietly();
             const problem = validateImage(file);
             setMode("image");
             clearFailure();
@@ -153,6 +187,7 @@ export default function Composer() {
             let check;
             if (mode === "image") {
                 setProgress({ stage: "prepare", fraction: 0 });
+                const { compressImage } = await loadCompressImage();
                 const prepared = await compressImage(image.file);
                 setProgress({ stage: "upload", fraction: 0 });
                 check = await createImageCheck({
@@ -166,6 +201,8 @@ export default function Composer() {
             }
             navigate(`/v/${check.id}`);
         } catch (error) {
+            // Load the notice before showing it, so it never appears through a fallback.
+            await preloadFailureNotice().catch(ignore);
             submittingRef.current = false;
             setSubmitting(false);
             setProgress(null);
@@ -192,6 +229,7 @@ export default function Composer() {
     const onDragOver = (event) => {
         if (!hasFiles(event.dataTransfer) || submitting) return;
         event.preventDefault();
+        preloadQuietly();
         setDragging(true);
     };
 
@@ -223,7 +261,7 @@ export default function Composer() {
     const modifier = isMac() ? "Cmd" : "Ctrl";
 
     return (
-        <div className={styles.composer} ref={rootRef}>
+        <div className={styles.composer} ref={rootRef} onPointerEnter={preloadQuietly} onFocus={preloadQuietly}>
             <Tabs value={mode} onValueChange={setMode}>
                 <form
                     aria-label="Vérifier une information"
@@ -240,25 +278,33 @@ export default function Composer() {
                         <TextMode ref={textRef} value={text} onChange={changeText} readOnly={submitting} />
                     </TabPanel>
                     <TabPanel value="image" tabIndex={-1} className={styles.panel}>
-                        <ImageMode
-                            ref={fileRef}
-                            file={image.file}
-                            error={image.error}
-                            kind={kind}
-                            onKindChange={setKind}
-                            claimText={claimText}
-                            onClaimChange={(value) => {
-                                setClaimText(value);
-                                clearFailure();
-                            }}
-                            onSelectFile={acceptFile}
-                            onRemove={() => {
-                                setImage({ file: null, error: "" });
-                                clearFailure();
-                            }}
-                            progress={progress}
-                            busy={submitting}
-                        />
+                        <Suspense
+                            fallback={
+                                <p role="status" className={styles.voiceLoading}>
+                                    Chargement…
+                                </p>
+                            }
+                        >
+                            <ImageMode
+                                ref={setFileInput}
+                                file={image.file}
+                                error={image.error}
+                                kind={kind}
+                                onKindChange={setKind}
+                                claimText={claimText}
+                                onClaimChange={(value) => {
+                                    setClaimText(value);
+                                    clearFailure();
+                                }}
+                                onSelectFile={acceptFile}
+                                onRemove={() => {
+                                    setImage({ file: null, error: "" });
+                                    clearFailure();
+                                }}
+                                progress={progress}
+                                busy={submitting}
+                            />
+                        </Suspense>
                     </TabPanel>
                     <TabPanel value="voice" tabIndex={-1} className={styles.panel}>
                         <Suspense
@@ -319,12 +365,14 @@ export default function Composer() {
             </Tabs>
 
             {failure && (
-                <CreateFailureNotice
-                    failure={failure}
-                    isLoggedIn={isLoggedIn}
-                    onRetry={submit}
-                    className={styles.notice}
-                />
+                <Suspense fallback={null}>
+                    <CreateFailureNotice
+                        failure={failure}
+                        isLoggedIn={isLoggedIn}
+                        onRetry={submit}
+                        className={styles.notice}
+                    />
+                </Suspense>
             )}
 
             <div className={styles.examples}>

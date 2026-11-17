@@ -171,6 +171,19 @@ def get_image_url_from_supabase(file_path, bucket_name="image-verifications"):
         logger.error(f"Erreur lors de la récupération de l'URL: {str(e)}")
         return None
 
+def create_signed_image_url(file_path, expires_in=31536000, bucket_name="image-verifications"):
+    """Return a fresh signed URL (default one year) for a stored image.
+
+    Unlike get_image_url_from_supabase, never falls back to a public URL:
+    raises on any failure (file gone, network, empty answer).
+    """
+    response = get_supabase_client().storage.from_(bucket_name).create_signed_url(file_path, expires_in)
+    signed_url = response.get('signedURL') if response else None
+    if not signed_url:
+        raise RuntimeError("Aucune URL signée renvoyée par le stockage")
+    return signed_url
+
+
 def create_bucket_if_not_exists():
     """
     Create the image-verifications bucket if it doesn't exist

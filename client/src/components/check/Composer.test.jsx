@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation, useParams } from "react-router-dom";
-import Composer from "./Composer";
+import Composer, { preloadComposerParts } from "./Composer";
 import { AuthContext } from "../../auth/AuthContext";
 import { createTextCheck } from "../../lib/checks";
 import { ApiError } from "../../lib/api";
@@ -59,6 +59,10 @@ const renderComposer = (auth = authValue(), path = "/") =>
 
 const claimBox = () => screen.getByRole("textbox", { name: "Affirmation à vérifier" });
 const submitButton = () => screen.getByRole("button", { name: "Vérifier" });
+
+// The Image mode and the failure notice are lazy; the app preloads them on intent.
+// The not-yet-loaded path is covered in Composer.lazy.test.jsx.
+beforeAll(() => preloadComposerParts());
 
 afterEach(() => {
     vi.clearAllMocks();

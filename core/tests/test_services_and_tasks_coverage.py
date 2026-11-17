@@ -118,13 +118,18 @@ def test_llm_analysis_falls_back_for_plain_text_and_api_errors(monkeypatch):
 
     assert plain_result["statut"] == "FAUSSE"
     assert plain_result["sources_principales"] == ["https://fallback.test"]
+    # A real (if unparseable) LLM answer is not flagged as a failed analysis.
+    assert "analysis_failed" not in plain_result
 
     monkeypatch.setattr(llm, "client", FakeOpenAIClient(side_effect=RuntimeError("api down")))
 
     error_result = llm.llm_analysis("claim", "rejeté", [{"link": "https://one.test"}])
 
+    # Legacy fields unchanged; the failure is flagged explicitly for the web path.
     assert error_result["statut"] == "FAUSSE"
     assert "api down" in error_result["explication"]
+    assert error_result["sources_principales"] == ["https://one.test"]
+    assert error_result["analysis_failed"] is True
 
 
 def test_perplexity_search_formats_sources_and_cleans_content(monkeypatch):
@@ -741,6 +746,105 @@ def test_translate_with_retry_raises_after_exhausting_attempts(monkeypatch):
         ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
 
     assert translate_mock.call_count == 3
+
+
+STALL = object()
+
+
+def _stalling_translator(release, calls, script):
+    """Fake GoogleTranslator. Each translate() call pops the next item of
+    ``script`` (STALL when empty): STALL blocks until ``release`` is set,
+    anything else is returned."""
+
+    class FakeTranslator:
+        def __init__(self, source, target):
+            pass
+
+        def translate(self, text):
+            calls.append(text)
+            step = script.pop(0) if script else STALL
+            if step is STALL:
+                release.wait(5)
+                return "too late"
+            return step
+
+    return FakeTranslator
+
+
+def test_translate_with_retry_times_out_stalled_call_and_retries(monkeypatch):
+    import threading
+
+    from core.services import ai_analysis
+
+    sleep_calls = []
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: sleep_calls.append(seconds))
+    monkeypatch.setattr(ai_analysis, "TRANSLATE_ATTEMPT_TIMEOUT", 0.05)
+    release = threading.Event()
+    calls = []
+    monkeypatch.setattr(
+        ai_analysis, "GoogleTranslator", _stalling_translator(release, calls, [STALL, "ok"])
+    )
+    try:
+        result = ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
+    finally:
+        release.set()
+
+    assert result == "ok"
+    assert len(calls) == 2
+    assert len(sleep_calls) == 1
+
+
+def test_translate_with_retry_gives_up_after_repeated_timeouts(monkeypatch):
+    import threading
+
+    from core.services import ai_analysis
+
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(ai_analysis, "TRANSLATE_ATTEMPT_TIMEOUT", 0.05)
+    release = threading.Event()
+    calls = []
+    monkeypatch.setattr(ai_analysis, "GoogleTranslator", _stalling_translator(release, calls, []))
+    try:
+        with pytest.raises(TimeoutError):
+            ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
+    finally:
+        release.set()
+
+    assert len(calls) == 3
+
+
+def test_translate_with_retry_propagates_non_transient_errors(monkeypatch):
+    from core.services import ai_analysis
+
+    class FakeTranslator:
+        def __init__(self, source, target):
+            pass
+
+        def translate(self, text):
+            raise ValueError("bad input")
+
+    monkeypatch.setattr(ai_analysis, "GoogleTranslator", FakeTranslator)
+
+    with pytest.raises(ValueError):
+        ai_analysis._translate_with_retry("bonjour", source="fr", target="en")
+
+
+def test_translate_text_returns_none_when_scraper_stalls(monkeypatch):
+    import threading
+
+    from core.services import ai_analysis, bambara_voice
+
+    monkeypatch.setattr(
+        bambara_voice, "translate_bambara_text", Mock(side_effect=RuntimeError("down"))
+    )
+    monkeypatch.setattr(ai_analysis.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(ai_analysis, "TRANSLATE_ATTEMPT_TIMEOUT", 0.05)
+    release = threading.Event()
+    monkeypatch.setattr(ai_analysis, "GoogleTranslator", _stalling_translator(release, [], []))
+    try:
+        assert ai_analysis.translate_text("bonjour", source="fr", target="en") is None
+    finally:
+        release.set()
 
 
 def test_translate_text_uses_official_api_and_skips_scraper(monkeypatch):
