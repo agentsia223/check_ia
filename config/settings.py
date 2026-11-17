@@ -39,6 +39,19 @@ if _cors_origins == '*':
 else:
     CORS_ALLOWED_ORIGINS = _cors_origins.split(',')
 
+# The web client sends X-Anon-Token for signed-out checks (/api/checks/).
+from corsheaders.defaults import default_headers  # noqa: E402
+CORS_ALLOW_HEADERS = (*default_headers, 'x-anon-token')
+
+# Salt for hashing client IPs in the checks quotas (only the hash is stored).
+CHECKS_IP_HASH_SALT = os.getenv('CHECKS_IP_HASH_SALT', '') or SECRET_KEY
+# Number of trusted proxies appending to X-Forwarded-For (confirm at deploy;
+# see core/services/checks.py::client_ip). Invalid values fall back to 1.
+try:
+    CHECKS_TRUSTED_PROXY_COUNT = max(1, int(os.getenv('CHECKS_TRUSTED_PROXY_COUNT', '1')))
+except ValueError:
+    CHECKS_TRUSTED_PROXY_COUNT = 1
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
